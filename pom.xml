@@ -27,6 +27,8 @@
 
   <modules>
     <module>kotlin</module>
+    <module>kotlin-springboot-autoconfigure</module>
+    <module>kotlin-springboot-starter</module>
   </modules>
 
   <properties>
@@ -40,10 +42,39 @@
     <slf4j.version>1.7.30</slf4j.version>
     <log4j.version>2.13.3</log4j.version>
     <dokka.version>0.10.1</dokka.version>
+    <springboot.version>2.3.2.RELEASE</springboot.version>
   </properties>
 
   <dependencyManagement>
     <dependencies>
+
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>axon-kotlin</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>axon-kotlin-springboot-autoconfigure</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>axon-kotlin-springboot-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- SpringBoot Import -->
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${springboot.version}</version>
+        <scope>import</scope>
+        <type>pom</type>
+      </dependency>
+
       <dependency>
         <groupId>org.jetbrains.kotlin</groupId>
         <artifactId>kotlin-bom</artifactId>
@@ -55,6 +86,11 @@
       <dependency>
         <groupId>org.axonframework</groupId>
         <artifactId>axon-configuration</artifactId>
+        <version>${axon.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.axonframework</groupId>
+        <artifactId>axon-modelling</artifactId>
         <version>${axon.version}</version>
       </dependency>
       <dependency>
@@ -235,6 +271,18 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+
+    <profile>
+      <id>example</id>
+      <activation>
+        <property>
+          <name>!skipExamples</name>
+        </property>
+      </activation>
+      <modules>
+        <module>kotlin-example</module>
+      </modules>
     </profile>
 
   </profiles>
