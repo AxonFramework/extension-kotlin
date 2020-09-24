@@ -30,7 +30,6 @@ import org.axonframework.modelling.command.CreationPolicy
 import org.springframework.boot.ApplicationRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -65,16 +64,16 @@ class BankAccountService(val commandGateway: CommandGateway) {
         logger.info { "\nPerforming basic operations on account $accountId" }
 
         commandGateway.send(
-            command = CreateBankAccountCommand(accountId, 100),
-            onSuccess = { _, result: Any?, _ ->
-                AxonKotlinExampleApplication.logger.info { "Successfully created account with id: $result" }
-                commandGateway.send(
-                    command = DepositMoneyCommand(accountId, 20),
-                    onSuccess = { c, _: Any?, _ -> logger.info { "Successfully deposited ${c.payload.amountOfMoney}" } },
-                    onError = { c, e, _ -> logger.error(e) { "Error depositing money on ${c.payload.bankAccountId}" } }
-                )
-            },
-            onError = { c, e, _ -> logger.error(e) { "Error creating account ${c.payload.bankAccountId}" } }
+                command = CreateBankAccountCommand(accountId, 100),
+                onSuccess = { _, result: Any?, _ ->
+                    AxonKotlinExampleApplication.logger.info { "Successfully created account with id: $result" }
+                    commandGateway.send(
+                            command = DepositMoneyCommand(accountId, 20),
+                            onSuccess = { c, _: Any?, _ -> logger.info { "Successfully deposited ${c.payload.amountOfMoney}" } },
+                            onError = { c, e, _ -> logger.error(e) { "Error depositing money on ${c.payload.bankAccountId}" } }
+                    )
+                },
+                onError = { c, e, _ -> logger.error(e) { "Error creating account ${c.payload.bankAccountId}" } }
         )
 
     }
@@ -85,8 +84,8 @@ class BankAccountService(val commandGateway: CommandGateway) {
  */
 @AggregateWithImmutableIdentifier
 data class BankAccount(
-    @ImmutableAggregateIdentifier
-    private val id: UUID
+        @ImmutableAggregateIdentifier
+        private val id: UUID
 ) {
 
     private var overdraftLimit: Long = 0

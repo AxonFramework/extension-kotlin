@@ -44,13 +44,8 @@
       <artifactId>axon-kotlin-springboot-starter</artifactId>
     </dependency>
     <dependency>
-      <groupId>io.github.microutils</groupId>
-      <artifactId>kotlin-logging</artifactId>
-    </dependency>
-    <dependency>
       <groupId>org.axonframework</groupId>
       <artifactId>axon-spring-boot-starter</artifactId>
-      <version>${axon.version}</version>
       <exclusions>
         <exclusion>
           <!-- we play locally and don't need axon server -->
@@ -59,42 +54,9 @@
         </exclusion>
       </exclusions>
     </dependency>
+    <dependency>
+      <groupId>io.github.microutils</groupId>
+      <artifactId>kotlin-logging-jvm</artifactId>
+    </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.jetbrains.kotlin</groupId>
-        <artifactId>kotlin-maven-plugin</artifactId>
-        <version>${kotlin.version}</version>
-        <configuration>
-          <jvmTarget>1.8</jvmTarget>
-          <args>
-            <arg>-Xjsr305=strict</arg>
-          </args>
-          <compilerPlugins>
-            <plugin>no-arg</plugin>
-            <plugin>all-open</plugin>
-            <plugin>spring</plugin>
-          </compilerPlugins>
-          <pluginOptions>
-            <!-- Axon specific classes -->
-            <option>all-open:annotation=org.axonframework.modelling.command.AggregateRoot</option>
-          </pluginOptions>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-maven-allopen</artifactId>
-            <version>${kotlin.version}</version>
-          </dependency>
-          <dependency>
-            <groupId>org.jetbrains.kotlin</groupId>
-            <artifactId>kotlin-maven-noarg</artifactId>
-            <version>${kotlin.version}</version>
-          </dependency>
-        </dependencies>
-      </plugin>
-    </plugins>
-  </build>
 </project>

@@ -29,6 +29,11 @@
 
     <artifactId>axon-kotlin-springboot-autoconfigure</artifactId>
 
+    <properties>
+      <!-- generate KDoc for this module -->
+      <dokka.skip>false</dokka.skip>
+    </properties>
+
     <dependencies>
 
         <dependency>
@@ -63,7 +68,7 @@
         </dependency>
         <dependency>
             <groupId>io.github.microutils</groupId>
-            <artifactId>kotlin-logging</artifactId>
+            <artifactId>kotlin-logging-jvm</artifactId>
         </dependency>
     </dependencies>
 </project>
