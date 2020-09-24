@@ -40,21 +40,6 @@ class AxonKotlinExampleApplication {
 
     companion object : KLogging()
 
-//    @Autowired
-//    fun manualConfigure(configurer: Configurer) {
-//        configurer.configureAggregate(
-//            defaultAggregateConfiguration<BankAccount>()
-//                .configureRepository { config ->
-//                    EventSourcingAggregateWithImmutableIdentifierRepository(
-//                        EventSourcingRepository
-//                            .builder(BankAccount::class.java)
-//                            .eventStore(config.eventStore())
-//                            .aggregateFactory(AggregateWithImmutableIdentifierFactory.usingIdentifier(UUID::class) { UUID.fromString(it) })
-//                    )
-//                }
-//        )
-//    }
-
     /**
      * Configures to use in-memory embedded event store.
      */

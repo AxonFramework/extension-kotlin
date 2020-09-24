@@ -493,6 +493,7 @@
             </args>
             <compilerPlugins>
               <plugin>no-arg</plugin>
+              <plugin>spring</plugin>
               <plugin>all-open</plugin>
             </compilerPlugins>
             <pluginOptions>

@@ -38,6 +38,26 @@ import java.util.*
  */
 @Configuration
 class BankConfiguration(val bankAccountService: BankAccountService) {
+
+
+//    /**
+//     * Example of manual configuration.
+//     */
+//    @Autowired
+//    fun manualConfigure(configurer: Configurer) {
+//        configurer.configureAggregate(
+//                defaultAggregateConfiguration<BankAccount>()
+//                        .configureRepository { config ->
+//                            EventSourcingAggregateWithImmutableIdentifierRepository(
+//                                    EventSourcingRepository
+//                                            .builder(BankAccount::class.java)
+//                                            .eventStore(config.eventStore())
+//                                            .aggregateFactory(usingIdentifier(UUID::class) { UUID.fromString(it) })
+//                            )
+//                        }
+//        )
+//    }
+
     /**
      * Application runner of bank ops.
      */
