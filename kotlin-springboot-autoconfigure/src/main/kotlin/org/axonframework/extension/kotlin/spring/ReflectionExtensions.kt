@@ -26,7 +26,6 @@ import kotlin.reflect.jvm.jvmErasure
 /**
  * Scans classpath for annotated aggregate classes.
  * @param scanPackage package to scan.
- * @param annotationClazz annotation class that is used on classes.
  * @return list of annotated classes.
  */
 internal fun KClass<out Annotation>.findAnnotatedAggregateClasses(scanPackage: String): List<KClass<Any>> {
@@ -40,7 +39,6 @@ internal fun KClass<out Annotation>.findAnnotatedAggregateClasses(scanPackage: S
 
 /**
  * Extracts the class of aggregate identifier from an aggregate.
- * @param aggregateClazz aggregate class.
  * @return class of aggregate identifier.
  * @throws IllegalArgumentException if the required constructor is not found.
  */
@@ -99,3 +97,8 @@ internal fun List<AggregateIdentifierConverter<*>>.findIdentifierConverter(idCla
  * @return class of aggregate identifier or <code>null</code> if it can't be resolved.
  */
 internal fun AggregateIdentifierConverter<*>.getConverterIdentifierClass() = this::class.supertypes.first { superTypes -> superTypes.classifier == AggregateIdentifierConverter::class }.arguments[0].type?.jvmErasure
+
+/**
+ * Converts a string to the same string with first lower letter.
+ */
+fun String?.toFirstLower() = this?.substring(0, 1)?.toLowerCase() + this?.substring(1, this?.length - 1)
