@@ -22,9 +22,9 @@ import org.axonframework.eventsourcing.EventSourcingHandler
 import org.axonframework.extension.kotlin.example.AxonKotlinExampleApplication
 import org.axonframework.extension.kotlin.example.api.*
 import org.axonframework.extension.kotlin.spring.AggregateWithImmutableIdentifier
-import org.axonframework.extensions.kotlin.aggregate.ImmutableAggregateIdentifier
 import org.axonframework.extensions.kotlin.send
 import org.axonframework.modelling.command.AggregateCreationPolicy
+import org.axonframework.modelling.command.AggregateIdentifier
 import org.axonframework.modelling.command.AggregateLifecycle.apply
 import org.axonframework.modelling.command.CreationPolicy
 import org.springframework.boot.ApplicationRunner
@@ -104,7 +104,7 @@ class BankAccountService(val commandGateway: CommandGateway) {
  */
 @AggregateWithImmutableIdentifier
 data class BankAccount(
-        @ImmutableAggregateIdentifier
+        @AggregateIdentifier
         private val id: UUID
 ) {
 

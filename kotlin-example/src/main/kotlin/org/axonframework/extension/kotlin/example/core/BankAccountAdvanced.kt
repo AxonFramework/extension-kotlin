@@ -23,15 +23,14 @@ import org.axonframework.extension.kotlin.example.api.AdvancedBankAccountCreated
 import org.axonframework.extension.kotlin.example.api.CreateAdvancedBankAccountCommand
 import org.axonframework.extension.kotlin.spring.AggregateWithImmutableIdentifier
 import org.axonframework.extensions.kotlin.aggregate.AggregateIdentifierConverter
-import org.axonframework.extensions.kotlin.aggregate.ImmutableAggregateIdentifier
 import org.axonframework.extensions.kotlin.send
 import org.axonframework.modelling.command.AggregateCreationPolicy
+import org.axonframework.modelling.command.AggregateIdentifier
 import org.axonframework.modelling.command.AggregateLifecycle.apply
 import org.axonframework.modelling.command.CreationPolicy
 import org.springframework.boot.ApplicationRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
-import org.springframework.core.annotation.Order
 import org.springframework.stereotype.Service
 import java.util.*
 
@@ -84,11 +83,11 @@ class AdvancedBankAccountService(val commandGateway: CommandGateway) {
         logger.info { "\nPerforming advanced operations on account $accountIdAdvanced" }
 
         commandGateway.send(
-            command = CreateAdvancedBankAccountCommand(accountIdAdvanced, 100),
-            onSuccess = { _, result: Any?, _ ->
-                logger.info { "Successfully created account with id: $result" }
-            },
-            onError = { c, e, _ -> logger.error(e) { "Error creating account ${c.payload.bankAccountId}" } }
+                command = CreateAdvancedBankAccountCommand(accountIdAdvanced, 100),
+                onSuccess = { _, result: Any?, _ ->
+                    logger.info { "Successfully created account with id: $result" }
+                },
+                onError = { c, e, _ -> logger.error(e) { "Error creating account ${c.payload.bankAccountId}" } }
         )
     }
 }
@@ -106,8 +105,8 @@ data class BankAccountIdentifier(val id: String) {
  */
 @AggregateWithImmutableIdentifier
 data class BankAccountAdvanced(
-    @ImmutableAggregateIdentifier
-    private val id: BankAccountIdentifier
+        @AggregateIdentifier
+        private val id: BankAccountIdentifier
 ) {
 
     private var overdraftLimit: Long = 0
