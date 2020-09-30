@@ -34,6 +34,9 @@ fun main(args: Array<String>) {
     SpringApplication.run(AxonKotlinExampleApplication::class.java, *args)
 }
 
+/**
+ * Main example application class.
+ */
 @SpringBootApplication
 @EnableAggregateWithImmutableIdentifierScan
 class AxonKotlinExampleApplication {
