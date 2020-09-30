@@ -15,7 +15,7 @@
  */
 package org.axonframework.extensions.kotlin
 
-import org.axonframework.extensions.kotlin.aggregate.ImmutableAggregateIdentifier
+import org.axonframework.modelling.command.AggregateIdentifier
 import org.axonframework.modelling.command.TargetAggregateIdentifier
 import java.util.*
 
@@ -32,14 +32,14 @@ internal data class ExampleCommand(@TargetAggregateIdentifier val id: String)
 /**
  * Immutable aggregate with String identifier.
  */
-internal data class TestStringAggregate(@ImmutableAggregateIdentifier val aggregateId: String)
+internal data class TestStringAggregate(@AggregateIdentifier val aggregateId: String)
 
 /**
  * Immutable aggregate with UUID identifier.
  */
-internal data class TestUUIDAggregate(@ImmutableAggregateIdentifier val aggregateId: UUID)
+internal data class TestUUIDAggregate(@AggregateIdentifier val aggregateId: UUID)
 
 /**
  * Immutable aggregate with Long identifier.
  */
-internal data class TestLongAggregate(@ImmutableAggregateIdentifier val aggregateId: Long)
+internal data class TestLongAggregate(@AggregateIdentifier val aggregateId: Long)
