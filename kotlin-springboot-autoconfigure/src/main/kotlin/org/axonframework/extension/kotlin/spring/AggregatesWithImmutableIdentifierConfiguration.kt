@@ -19,7 +19,9 @@ import mu.KLogging
 import org.axonframework.config.AggregateConfigurer.defaultConfiguration
 import org.axonframework.config.Configurer
 import org.axonframework.eventsourcing.EventSourcingRepository
+import org.axonframework.extensions.kotlin.aggregate.AggregateCreationCallback
 import org.axonframework.extensions.kotlin.aggregate.AggregateIdentifierConverter
+import org.axonframework.extensions.kotlin.aggregate.AggregateWithImmutableIdentifierFactory
 import org.axonframework.extensions.kotlin.aggregate.AggregateWithImmutableIdentifierFactory.Companion.usingIdentifier
 import org.axonframework.extensions.kotlin.aggregate.AggregateWithImmutableIdentifierFactory.Companion.usingStringIdentifier
 import org.axonframework.extensions.kotlin.aggregate.AggregateWithImmutableIdentifierFactory.Companion.usingUUIDIdentifier
@@ -39,8 +41,8 @@ import java.util.*
  * @since 0.2.0
  */
 @Configuration
-open class AggregatesWithImmutableIdentifierConfiguration(
-    private val context: ApplicationContext
+class AggregatesWithImmutableIdentifierConfiguration(
+        private val context: ApplicationContext
 ) {
 
     companion object : KLogging()
@@ -51,7 +53,7 @@ open class AggregatesWithImmutableIdentifierConfiguration(
      */
     @Bean
     @ConditionalOnMissingBean
-    open fun initialize(): AggregatesWithImmutableIdentifierSettings {
+    fun initialize(): AggregatesWithImmutableIdentifierSettings {
         val beans = context.getBeansWithAnnotation(EnableAggregateWithImmutableIdentifierScan::class.java)
         require(beans.isNotEmpty()) {
             "EnableAggregateWithImmutableIdentifierScan should be activated exactly once."
@@ -61,45 +63,53 @@ open class AggregatesWithImmutableIdentifierConfiguration(
         }
         val basePackage = EnableAggregateWithImmutableIdentifierScan.getBasePackage(beans.entries.first().value)
         return AggregatesWithImmutableIdentifierSettings(basePackage = basePackage
-            ?: throw IllegalStateException("Required setting basePackage could not be initialized, consider to provide your own AggregatesWithImmutableIdentifierSettings.")
+                ?: throw IllegalStateException("Required setting basePackage could not be initialized, consider to provide your own AggregatesWithImmutableIdentifierSettings.")
         )
     }
 
     @Autowired
     fun configureAggregates(
-        configurer: Configurer,
-        settings: AggregatesWithImmutableIdentifierSettings,
-        @Autowired(required = false) identifierConverters: List<AggregateIdentifierConverter<*>>?
+            configurer: Configurer,
+            settings: AggregatesWithImmutableIdentifierSettings,
+            @Autowired(required = false) identifierConverters: List<AggregateIdentifierConverter<*>>?
     ) {
         val converters = identifierConverters ?: emptyList() // fallback to empty list if none are defined
 
         logger.info { "Discovered ${converters.size} converters for aggregate identifiers." }
         logger.info { "Scanning ${settings.basePackage} for aggregates" }
-        AggregateWithImmutableIdentifier::class
-            .findAnnotatedAggregateClasses(settings.basePackage)
-            .map { aggregateClazz ->
-                configurer.configureAggregate(
-                    defaultConfiguration(aggregateClazz.java)
-                        .configureRepository { config ->
-                            EventSourcingAggregateWithImmutableIdentifierRepository(
-                                builder = EventSourcingRepository
-                                    .builder(aggregateClazz.java)
-                                    .eventStore(config.eventStore())
-                                    .aggregateFactory(
-                                        when (val idFieldClazz = aggregateClazz.extractAggregateIdentifierClass()) {
-                                            String::class -> usingStringIdentifier(aggregateClazz)
-                                            UUID::class -> usingUUIDIdentifier(aggregateClazz)
-                                            else -> usingIdentifier(aggregateClazz, idFieldClazz, converters.findIdentifierConverter(idFieldClazz))
-                                        }.also {
-                                            logger.info { "Registering aggregate factory $it" }
-                                        }
-                                    )
-                            )
-                        }
-                )
-            }
-    }
 
+        AggregateWithImmutableIdentifier::class
+                .findAnnotatedAggregateClasses(settings.basePackage)
+                .map { aggregateClazz ->
+
+                    val aggregateFactory = when (val idFieldClazz = aggregateClazz.extractAggregateIdentifierClass()) {
+                        String::class -> usingStringIdentifier(aggregateClazz)
+                        UUID::class -> usingUUIDIdentifier(aggregateClazz)
+                        else -> usingIdentifier(aggregateClazz, idFieldClazz, converters.findIdentifierConverter(idFieldClazz))
+                    }.also {
+
+                        // logging callback
+                        it.registerCallback(object : AggregateCreationCallback<Any> {
+                            override fun aggregateCreated(aggregateInstance: Any, aggregateFactory: AggregateWithImmutableIdentifierFactory<*, *>) {
+                                logger.trace { "Aggregate factory $aggregateFactory just created $aggregateInstance" }
+                            }
+                        })
+                        logger.info { "Registering aggregate factory $it" }
+                    }
+
+                    configurer.configureAggregate(
+                            defaultConfiguration(aggregateClazz.java)
+                                    .configureRepository { config ->
+                                        EventSourcingAggregateWithImmutableIdentifierRepository(
+                                                builder = EventSourcingRepository
+                                                        .builder(aggregateClazz.java)
+                                                        .eventStore(config.eventStore())
+                                                        .aggregateFactory(aggregateFactory)
+                                        )
+                                    }
+                    )
+                }
+    }
 
 }
 
