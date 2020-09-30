@@ -18,7 +18,8 @@ package org.axonframework.extensions.kotlin.aggregate
 
 import org.axonframework.eventhandling.DomainEventMessage
 import org.axonframework.eventsourcing.AggregateFactory
-import org.axonframework.extensions.kotlin.aggregate.AggregateIdentifierConverter.*
+import org.axonframework.extensions.kotlin.aggregate.AggregateIdentifierConverter.DefaultString
+import org.axonframework.extensions.kotlin.aggregate.AggregateIdentifierConverter.DefaultUUID
 import java.util.*
 import kotlin.reflect.KClass
 
@@ -27,6 +28,7 @@ import kotlin.reflect.KClass
  * @constructor creates aggregate factory.
  * @param clazz aggregate class.
  * @param idClazz aggregate identifier class.
+ * @param aggregateFactoryMethod factory method to create instances, defaults to default constructor of the provided [clazz].
  * @param idExtractor function to convert aggregate identifier from string to [ID].
  * @param [A] aggregate type.
  * @param [ID] aggregate identifier type.
@@ -35,9 +37,11 @@ import kotlin.reflect.KClass
  * @author Simon Zambrovski
  */
 data class AggregateWithImmutableIdentifierFactory<A : Any, ID : Any>(
-    private val clazz: KClass<A>,
-    private val idClazz: KClass<ID>,
-    private val idExtractor: AggregateIdentifierConverter<ID>
+        val clazz: KClass<A>,
+        val idClazz: KClass<ID>,
+        val aggregateFactoryMethod: AggregateFactoryMethod<ID, A> = extractConstructorFactory(clazz, idClazz),
+        val idExtractor: AggregateIdentifierConverter<ID>,
+        val callbacks: MutableSet<AggregateCreationCallback<A>> = mutableSetOf()
 ) : AggregateFactory<A> {
 
     companion object {
@@ -52,19 +56,19 @@ data class AggregateWithImmutableIdentifierFactory<A : Any, ID : Any>(
          * Factory method for aggregate factory using string as aggregate identifier.
          * @return instance of AggregateWithImmutableIdentifierFactory
          */
-        fun <A : Any> usingStringIdentifier(clazz: KClass<A>) = usingIdentifier(clazz, String::class, DefaultString)
+        fun <A : Any> usingStringIdentifier(clazz: KClass<A>) = usingIdentifier(aggregateClazz = clazz, idClazz = String::class, idExtractor = DefaultString)
 
         /**
          * Reified factory method for aggregate factory using UUID as aggregate identifier.
          * @return instance of AggregateWithImmutableIdentifierFactory
          */
-        inline fun <reified A : Any> usingUUIDIdentifier() = usingIdentifier<A, UUID>(UUID::class, DefaultUUID::apply)
+        inline fun <reified A : Any> usingUUIDIdentifier() = usingIdentifier<A, UUID>(idClazz = UUID::class, idExtractor = DefaultUUID::apply)
 
         /**
          * Factory method for aggregate factory using UUID as aggregate identifier.
          * @return instance of AggregateWithImmutableIdentifierFactory
          */
-        fun <A : Any> usingUUIDIdentifier(clazz: KClass<A>) = usingIdentifier(clazz, UUID::class, DefaultUUID)
+        fun <A : Any> usingUUIDIdentifier(clazz: KClass<A>) = usingIdentifier(aggregateClazz = clazz, idClazz = UUID::class, idExtractor = DefaultUUID)
 
         /**
          * Reified factory method for aggregate factory using specified identifier type and converter function.
@@ -73,9 +77,9 @@ data class AggregateWithImmutableIdentifierFactory<A : Any, ID : Any>(
          * @return instance of AggregateWithImmutableIdentifierFactory
          */
         inline fun <reified A : Any, ID : Any> usingIdentifier(idClazz: KClass<ID>, noinline idExtractor: (String) -> ID) =
-            AggregateWithImmutableIdentifierFactory(clazz = A::class, idClazz = idClazz, idExtractor = object : AggregateIdentifierConverter<ID> {
-                override fun apply(it: String): ID = idExtractor(it)
-            })
+                AggregateWithImmutableIdentifierFactory(clazz = A::class, idClazz = idClazz, idExtractor = object : AggregateIdentifierConverter<ID> {
+                    override fun apply(it: String): ID = idExtractor(it)
+                })
 
         /**
          * Factory method for aggregate factory using specified identifier type and converter.
@@ -84,25 +88,49 @@ data class AggregateWithImmutableIdentifierFactory<A : Any, ID : Any>(
          * @return instance of AggregateWithImmutableIdentifierFactory
          */
         fun <A : Any, ID : Any> usingIdentifier(aggregateClazz: KClass<A>, idClazz: KClass<ID>, idExtractor: AggregateIdentifierConverter<ID>) =
-            AggregateWithImmutableIdentifierFactory(clazz = aggregateClazz, idClazz = idClazz, idExtractor = idExtractor)
+                AggregateWithImmutableIdentifierFactory(clazz = aggregateClazz, idClazz = idClazz, idExtractor = idExtractor)
+
+        /**
+         * Tries to extract constructor from given class. Used as a default factory method for the aggregate.
+         * @param clazz aggregate class.
+         * @param idClazz id class.
+         * @return factory method to create new instances of aggregate.
+         */
+        fun <ID : Any, A : Any> extractConstructorFactory(clazz: KClass<A>, idClazz: KClass<ID>): AggregateFactoryMethod<ID, A> = {
+            val constructor = invokeReporting(
+                    "The aggregate [${clazz.java.name}] doesn't provide a constructor for the identifier type [${idClazz.java.name}]."
+            ) { clazz.java.getConstructor(idClazz.java) }
+            constructor.newInstance(it)
+        }
     }
 
 
     @Throws(IllegalArgumentException::class)
     override fun createAggregateRoot(aggregateIdentifier: String, message: DomainEventMessage<*>?): A {
 
-        val constructor = invokeReporting(
-            "The aggregate [${clazz.java.name}] doesn't provide a constructor for the identifier type [${idClazz.java.name}]."
-        ) { clazz.java.getConstructor(idClazz.java) }
-
         val id: ID = invokeReporting(
-            "The identifier [$aggregateIdentifier] could not be converted to the type [${idClazz.java.name}], required for the ID of aggregate [${clazz.java.name}]."
+                "The identifier [$aggregateIdentifier] could not be converted to the type [${idClazz.java.name}], required for the ID of aggregate [${clazz.java.name}]."
         ) { idExtractor.apply(aggregateIdentifier) }
 
-        return constructor.newInstance(id)
+        return aggregateFactoryMethod.invoke(id).also { notifyCallbacks(it) }
     }
 
     override fun getAggregateType(): Class<A> = clazz.java
+
+    /**
+     * Notify the callbacks.
+     */
+    private fun notifyCallbacks(aggregateInstance: A) {
+        callbacks.forEach { it.aggregateCreated(aggregateInstance, this) }
+    }
+
+    /**
+     * Registers a new callback.
+     * @param callback callback to be called on aggregate creation.
+     */
+    public fun registerCallback(callback: AggregateCreationCallback<A>) {
+        callbacks.add(callback)
+    }
 }
 
 /**
