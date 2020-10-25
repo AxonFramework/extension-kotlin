@@ -29,7 +29,7 @@ import java.util.concurrent.Callable
  * @since 0.2.0
  * @author Simon Zambrovski
  */
-class EventSourcingAggregateWithImmutableIdentifierRepository<A>(
+class EventSourcingImmutableIdentifierAggregateRepository<A>(
     builder: Builder<A>
 ) : EventSourcingRepository<A>(builder) {
 

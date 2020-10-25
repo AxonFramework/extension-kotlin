@@ -16,12 +16,18 @@
 package org.axonframework.extension.kotlin.example
 
 import mu.KLogging
+import org.axonframework.config.Configurer
+import org.axonframework.eventhandling.EventBus
+import org.axonframework.eventhandling.EventMessage
+import org.axonframework.eventhandling.interceptors.EventLoggingInterceptor
 import org.axonframework.eventhandling.tokenstore.TokenStore
 import org.axonframework.eventhandling.tokenstore.inmemory.InMemoryTokenStore
 import org.axonframework.eventsourcing.eventstore.EmbeddedEventStore
 import org.axonframework.eventsourcing.eventstore.EventStore
 import org.axonframework.eventsourcing.eventstore.inmemory.InMemoryEventStorageEngine
 import org.axonframework.extension.kotlin.spring.EnableAggregateWithImmutableIdentifierScan
+import org.axonframework.messaging.interceptors.LoggingInterceptor
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.SpringApplication
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.context.annotation.Bean
@@ -50,9 +56,19 @@ class AxonKotlinExampleApplication {
     fun eventStore(): EventStore = EmbeddedEventStore.builder().storageEngine(InMemoryEventStorageEngine()).build()
 
     /**
+     * Configure logging interceptor.
+     */
+    @Autowired
+    fun configureEventHandlingInterceptors(eventBus: EventBus) {
+        eventBus.registerDispatchInterceptor(EventLoggingInterceptor())
+    }
+
+    /**
      * Configures to use in-memory token store.
      */
     @Bean
     fun tokenStore(): TokenStore = InMemoryTokenStore()
 
 }
+
+

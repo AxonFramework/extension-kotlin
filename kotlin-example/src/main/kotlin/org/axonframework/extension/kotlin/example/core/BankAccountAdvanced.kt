@@ -38,7 +38,7 @@ import java.util.*
  * Advanced bank config.
  */
 @Configuration
-class AdvancedBankConfiguration(val advancedBankAccountService: AdvancedBankAccountService) {
+class AdvancedBankConfiguration(private val advancedBankAccountService: AdvancedBankAccountService) {
 
     /**
      * Application run starting bank ops.
@@ -70,7 +70,7 @@ class AdvancedBankConfiguration(val advancedBankAccountService: AdvancedBankAcco
  * Advanced bank service.
  */
 @Service
-class AdvancedBankAccountService(val commandGateway: CommandGateway) {
+class AdvancedBankAccountService(private val commandGateway: CommandGateway) {
 
     companion object : KLogging()
 

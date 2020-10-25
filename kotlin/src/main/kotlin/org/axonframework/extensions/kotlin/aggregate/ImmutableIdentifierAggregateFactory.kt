@@ -20,6 +20,7 @@ import org.axonframework.eventhandling.DomainEventMessage
 import org.axonframework.eventsourcing.AggregateFactory
 import org.axonframework.extensions.kotlin.aggregate.AggregateIdentifierConverter.DefaultString
 import org.axonframework.extensions.kotlin.aggregate.AggregateIdentifierConverter.DefaultUUID
+import org.axonframework.extensions.kotlin.invokeReporting
 import java.util.*
 import kotlin.reflect.KClass
 
@@ -36,37 +37,36 @@ import kotlin.reflect.KClass
  * @since 0.2.0
  * @author Simon Zambrovski
  */
-data class AggregateWithImmutableIdentifierFactory<A : Any, ID : Any>(
+data class ImmutableIdentifierAggregateFactory<A : Any, ID : Any>(
         val clazz: KClass<A>,
         val idClazz: KClass<ID>,
         val aggregateFactoryMethod: AggregateFactoryMethod<ID, A> = extractConstructorFactory(clazz, idClazz),
-        val idExtractor: AggregateIdentifierConverter<ID>,
-        val callbacks: MutableSet<AggregateCreationCallback<A>> = mutableSetOf()
+        val idExtractor: AggregateIdentifierConverter<ID>
 ) : AggregateFactory<A> {
 
     companion object {
 
         /**
          * Reified factory method for aggregate factory using string as aggregate identifier.
-         * @return instance of AggregateWithImmutableIdentifierFactory
+         * @return instance of ImmutableIdentifierAggregateFactory
          */
         inline fun <reified A : Any> usingStringIdentifier() = usingIdentifier<A, String>(String::class) { it }
 
         /**
          * Factory method for aggregate factory using string as aggregate identifier.
-         * @return instance of AggregateWithImmutableIdentifierFactory
+         * @return instance of ImmutableIdentifierAggregateFactory
          */
         fun <A : Any> usingStringIdentifier(clazz: KClass<A>) = usingIdentifier(aggregateClazz = clazz, idClazz = String::class, idExtractor = DefaultString)
 
         /**
          * Reified factory method for aggregate factory using UUID as aggregate identifier.
-         * @return instance of AggregateWithImmutableIdentifierFactory
+         * @return instance of ImmutableIdentifierAggregateFactory
          */
         inline fun <reified A : Any> usingUUIDIdentifier() = usingIdentifier<A, UUID>(idClazz = UUID::class, idExtractor = DefaultUUID::apply)
 
         /**
          * Factory method for aggregate factory using UUID as aggregate identifier.
-         * @return instance of AggregateWithImmutableIdentifierFactory
+         * @return instance of ImmutableIdentifierAggregateFactory
          */
         fun <A : Any> usingUUIDIdentifier(clazz: KClass<A>) = usingIdentifier(aggregateClazz = clazz, idClazz = UUID::class, idExtractor = DefaultUUID)
 
@@ -74,10 +74,10 @@ data class AggregateWithImmutableIdentifierFactory<A : Any, ID : Any>(
          * Reified factory method for aggregate factory using specified identifier type and converter function.
          * @param idClazz identifier class.
          * @param idExtractor extractor function for identifier from string.
-         * @return instance of AggregateWithImmutableIdentifierFactory
+         * @return instance of ImmutableIdentifierAggregateFactory
          */
         inline fun <reified A : Any, ID : Any> usingIdentifier(idClazz: KClass<ID>, noinline idExtractor: (String) -> ID) =
-                AggregateWithImmutableIdentifierFactory(clazz = A::class, idClazz = idClazz, idExtractor = object : AggregateIdentifierConverter<ID> {
+                ImmutableIdentifierAggregateFactory(clazz = A::class, idClazz = idClazz, idExtractor = object : AggregateIdentifierConverter<ID> {
                     override fun apply(it: String): ID = idExtractor(it)
                 })
 
@@ -85,10 +85,10 @@ data class AggregateWithImmutableIdentifierFactory<A : Any, ID : Any>(
          * Factory method for aggregate factory using specified identifier type and converter.
          * @param idClazz identifier class.
          * @param idExtractor extractor for identifier from string.
-         * @return instance of AggregateWithImmutableIdentifierFactory
+         * @return instance of ImmutableIdentifierAggregateFactory
          */
         fun <A : Any, ID : Any> usingIdentifier(aggregateClazz: KClass<A>, idClazz: KClass<ID>, idExtractor: AggregateIdentifierConverter<ID>) =
-                AggregateWithImmutableIdentifierFactory(clazz = aggregateClazz, idClazz = idClazz, idExtractor = idExtractor)
+                ImmutableIdentifierAggregateFactory(clazz = aggregateClazz, idClazz = idClazz, idExtractor = idExtractor)
 
         /**
          * Tries to extract constructor from given class. Used as a default factory method for the aggregate.
@@ -112,37 +112,14 @@ data class AggregateWithImmutableIdentifierFactory<A : Any, ID : Any>(
                 "The identifier [$aggregateIdentifier] could not be converted to the type [${idClazz.java.name}], required for the ID of aggregate [${clazz.java.name}]."
         ) { idExtractor.apply(aggregateIdentifier) }
 
-        return aggregateFactoryMethod.invoke(id).also { notifyCallbacks(it) }
+        return aggregateFactoryMethod.invoke(id)
     }
 
     override fun getAggregateType(): Class<A> = clazz.java
 
-    /**
-     * Notify the callbacks.
-     */
-    private fun notifyCallbacks(aggregateInstance: A) {
-        callbacks.forEach { it.aggregateCreated(aggregateInstance, this) }
-    }
-
-    /**
-     * Registers a new callback.
-     * @param callback callback to be called on aggregate creation.
-     */
-    public fun registerCallback(callback: AggregateCreationCallback<A>) {
-        callbacks.add(callback)
-    }
 }
 
 /**
- * Tries to execute the given function or reports an error on failure.
- * @param errorMessage message to report on error.
- * @param function: function to invoke
+ * Type alias for function creating the aggregate from id.
  */
-@Throws(IllegalArgumentException::class)
-private fun <T : Any?> invokeReporting(errorMessage: String, function: () -> T): T {
-    return try {
-        function.invoke()
-    } catch (e: Exception) {
-        throw IllegalArgumentException(errorMessage, e)
-    }
-}
+typealias AggregateFactoryMethod<ID, A> = (ID) -> A

@@ -18,7 +18,7 @@ package org.axonframework.extensions.kotlin.aggregate
 import org.axonframework.extensions.kotlin.TestLongAggregate
 import org.axonframework.extensions.kotlin.TestStringAggregate
 import org.axonframework.extensions.kotlin.TestUUIDAggregate
-import org.axonframework.extensions.kotlin.aggregate.AggregateWithImmutableIdentifierFactory.Companion.usingIdentifier
+import org.axonframework.extensions.kotlin.aggregate.ImmutableIdentifierAggregateFactory.Companion.usingIdentifier
 import java.util.*
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -35,7 +35,7 @@ internal class AggregateWithImmutableIdentifierFactoryTest {
     @Test
     fun `should create string aggregate`() {
         val aggregateId = UUID.randomUUID().toString()
-        val factory = AggregateWithImmutableIdentifierFactory.usingStringIdentifier<TestStringAggregate>()
+        val factory = ImmutableIdentifierAggregateFactory.usingStringIdentifier<TestStringAggregate>()
         val aggregate = factory.createAggregateRoot(aggregateId, null)
 
         assertEquals(aggregateId, aggregate.aggregateId)
@@ -44,7 +44,7 @@ internal class AggregateWithImmutableIdentifierFactoryTest {
     @Test
     fun `should create uuid aggregate`() {
         val aggregateId = UUID.randomUUID()
-        val factory: AggregateWithImmutableIdentifierFactory<TestUUIDAggregate, UUID> = usingIdentifier(UUID::class) { UUID.fromString(it) }
+        val factory: ImmutableIdentifierAggregateFactory<TestUUIDAggregate, UUID> = usingIdentifier(UUID::class) { UUID.fromString(it) }
         val aggregate = factory.createAggregateRoot(aggregateId.toString(), null)
 
         assertEquals(aggregateId, aggregate.aggregateId)
@@ -54,7 +54,7 @@ internal class AggregateWithImmutableIdentifierFactoryTest {
     fun `should fail create aggregate with wrong constructor type`() {
         val aggregateId = UUID.randomUUID()
         // pretending the TestLongAggregate to have UUID as identifier.
-        val factory: AggregateWithImmutableIdentifierFactory<TestLongAggregate, UUID> = usingIdentifier(UUID::class) { UUID.fromString(it) }
+        val factory: ImmutableIdentifierAggregateFactory<TestLongAggregate, UUID> = usingIdentifier(UUID::class) { UUID.fromString(it) }
 
         val exception = assertFailsWith<IllegalArgumentException> {
             factory.createAggregateRoot(aggregateId.toString(), null)
@@ -68,7 +68,7 @@ internal class AggregateWithImmutableIdentifierFactoryTest {
     fun `should fail create aggregate error in extractor`() {
         val aggregateId = UUID.randomUUID()
         // the extractor is broken.
-        val factory: AggregateWithImmutableIdentifierFactory<TestUUIDAggregate, UUID> = usingIdentifier(UUID::class) { throw java.lang.IllegalArgumentException("") }
+        val factory: ImmutableIdentifierAggregateFactory<TestUUIDAggregate, UUID> = usingIdentifier(UUID::class) { throw java.lang.IllegalArgumentException("") }
 
         val exception = assertFailsWith<IllegalArgumentException> {
             factory.createAggregateRoot(aggregateId.toString(), null)

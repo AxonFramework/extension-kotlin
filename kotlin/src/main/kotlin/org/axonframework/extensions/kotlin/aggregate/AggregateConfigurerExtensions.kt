@@ -24,17 +24,17 @@ import org.axonframework.config.AggregateConfigurer.jpaMappedConfiguration
  * Creates default aggregate configurer with a usage of a reified type information.
  * @param [A] type of aggregate.
  */
-inline fun <reified A: Any> defaultAggregateConfiguration(): AggregateConfigurer<A> = AggregateConfigurer.defaultConfiguration(A::class.java)
+inline fun <reified A: Any> defaultConfiguration(): AggregateConfigurer<A> = AggregateConfigurer.defaultConfiguration(A::class.java)
 
 /**
  * Creates JPA-mapped aggregate configurer with a usage of a reified type information.
  * @param [A] type of aggregate.
  */
-inline fun <reified A: Any> jpaMappedAggregateConfiguration(): AggregateConfigurer<A> = jpaMappedConfiguration(A::class.java)
+inline fun <reified A: Any> jpaMappedConfiguration(): AggregateConfigurer<A> = jpaMappedConfiguration(A::class.java)
 
 /**
  * Creates JPA-mapped aggregate configurer with a usage of a reified type information.
  * @param entityManagerProvider entity manager provider.
  * @param [A] type of aggregate.
  */
-inline fun <reified A: Any> jpaMappedAggregateConfiguration(entityManagerProvider: EntityManagerProvider): AggregateConfigurer<A> = jpaMappedConfiguration(A::class.java, entityManagerProvider)
+inline fun <reified A: Any> jpaMappedConfiguration(entityManagerProvider: EntityManagerProvider): AggregateConfigurer<A> = jpaMappedConfiguration(A::class.java, entityManagerProvider)

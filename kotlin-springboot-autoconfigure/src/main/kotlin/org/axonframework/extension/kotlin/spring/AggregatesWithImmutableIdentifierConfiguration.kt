@@ -19,13 +19,11 @@ import mu.KLogging
 import org.axonframework.config.AggregateConfigurer.defaultConfiguration
 import org.axonframework.config.Configurer
 import org.axonframework.eventsourcing.EventSourcingRepository
-import org.axonframework.extensions.kotlin.aggregate.AggregateCreationCallback
 import org.axonframework.extensions.kotlin.aggregate.AggregateIdentifierConverter
-import org.axonframework.extensions.kotlin.aggregate.AggregateWithImmutableIdentifierFactory
-import org.axonframework.extensions.kotlin.aggregate.AggregateWithImmutableIdentifierFactory.Companion.usingIdentifier
-import org.axonframework.extensions.kotlin.aggregate.AggregateWithImmutableIdentifierFactory.Companion.usingStringIdentifier
-import org.axonframework.extensions.kotlin.aggregate.AggregateWithImmutableIdentifierFactory.Companion.usingUUIDIdentifier
-import org.axonframework.extensions.kotlin.aggregate.EventSourcingAggregateWithImmutableIdentifierRepository
+import org.axonframework.extensions.kotlin.aggregate.ImmutableIdentifierAggregateFactory.Companion.usingIdentifier
+import org.axonframework.extensions.kotlin.aggregate.ImmutableIdentifierAggregateFactory.Companion.usingStringIdentifier
+import org.axonframework.extensions.kotlin.aggregate.ImmutableIdentifierAggregateFactory.Companion.usingUUIDIdentifier
+import org.axonframework.extensions.kotlin.aggregate.EventSourcingImmutableIdentifierAggregateRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.context.ApplicationContext
@@ -87,20 +85,13 @@ class AggregatesWithImmutableIdentifierConfiguration(
                         UUID::class -> usingUUIDIdentifier(aggregateClazz)
                         else -> usingIdentifier(aggregateClazz, idFieldClazz, converters.findIdentifierConverter(idFieldClazz))
                     }.also {
-
-                        // logging callback
-                        it.registerCallback(object : AggregateCreationCallback<Any> {
-                            override fun aggregateCreated(aggregateInstance: Any, aggregateFactory: AggregateWithImmutableIdentifierFactory<*, *>) {
-                                logger.trace { "Aggregate factory $aggregateFactory just created $aggregateInstance" }
-                            }
-                        })
-                        logger.info { "Registering aggregate factory $it" }
+                        logger.debug { "Registering aggregate factory $it" }
                     }
 
                     configurer.configureAggregate(
                             defaultConfiguration(aggregateClazz.java)
                                     .configureRepository { config ->
-                                        EventSourcingAggregateWithImmutableIdentifierRepository(
+                                        EventSourcingImmutableIdentifierAggregateRepository(
                                                 builder = EventSourcingRepository
                                                         .builder(aggregateClazz.java)
                                                         .eventStore(config.eventStore())

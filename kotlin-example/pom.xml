@@ -46,13 +46,6 @@
     <dependency>
       <groupId>org.axonframework</groupId>
       <artifactId>axon-spring-boot-starter</artifactId>
-      <exclusions>
-        <exclusion>
-          <!-- we play locally and don't need axon server -->
-          <groupId>org.axonframework</groupId>
-          <artifactId>axon-server-connector</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>io.github.microutils</groupId>

@@ -66,7 +66,7 @@ internal class EventSourcingAggregateWithImmutableIdentifierRepositoryTest {
     fun `should ask factory to create the aggregate`() {
 
 
-        val repo = EventSourcingAggregateWithImmutableIdentifierRepository<TestStringAggregate>(
+        val repo = EventSourcingImmutableIdentifierAggregateRepository<TestStringAggregate>(
             EventSourcingRepository
                 .builder(TestStringAggregate::class.java)
                 .eventStore(eventStore)
