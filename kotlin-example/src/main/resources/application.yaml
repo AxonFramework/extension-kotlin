@@ -1,0 +1,3 @@
+axon:
+    axonserver:
+        enabled: false
