@@ -43,6 +43,7 @@
     <slf4j.version>1.7.30</slf4j.version>
     <log4j.version>2.13.3</log4j.version>
     <dokka.version>1.4.30</dokka.version>
+    <projectreactor.version>3.4.3</projectreactor.version>
 
     <!--
     Deactivate dokka by default, and make the build faster for all projects.
@@ -123,6 +124,22 @@
       <artifactId>kotlinx-coroutines-core</artifactId>
       <version>${kotlinx.coroutines.version}</version>
       <type>pom</type>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains.kotlinx</groupId>
+      <artifactId>kotlinx-coroutines-jdk8</artifactId>
+      <version>${kotlinx.coroutines.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.jetbrains.kotlinx</groupId>
+      <artifactId>kotlinx-coroutines-reactive</artifactId>
+      <version>${kotlinx.coroutines.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.projectreactor</groupId>
+      <artifactId>reactor-core</artifactId>
+      <optional>true</optional>
+      <version>${projectreactor.version}</version>
     </dependency>
 
     <dependency>
