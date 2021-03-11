@@ -548,5 +548,12 @@
         <role>Developer</role>
       </roles>
     </developer>
+    <developer>
+      <name>Joel Feinstein</name>
+      <email>code@thefeinsteins.com</email>
+      <roles>
+        <role>Developer</role>
+      </roles>
+    </developer>
   </developers>
 </project>
