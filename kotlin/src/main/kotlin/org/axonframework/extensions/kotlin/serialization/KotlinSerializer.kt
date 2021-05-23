@@ -1,0 +1,177 @@
+/*
+ * Copyright (c) 2010-2020. Axon Framework
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.axonframework.extensions.kotlin.serialization
+
+import kotlinx.serialization.KSerializer
+import kotlinx.serialization.SerializationException
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import org.axonframework.common.ObjectUtils
+import org.axonframework.serialization.AnnotationRevisionResolver
+import org.axonframework.serialization.ChainingConverter
+import org.axonframework.serialization.Converter
+import org.axonframework.serialization.RevisionResolver
+import org.axonframework.serialization.SerializedObject
+import org.axonframework.serialization.SerializedType
+import org.axonframework.serialization.Serializer
+import org.axonframework.serialization.SimpleSerializedObject
+import org.axonframework.serialization.SimpleSerializedType
+import org.axonframework.serialization.UnknownSerializedType
+import kotlin.reflect.KClass
+import kotlin.reflect.full.companionObject
+import kotlin.reflect.full.companionObjectInstance
+
+/**
+ * Implementation of Axon Serializer that uses a kotlinx.serialization implementation.
+ * The serialized format is JSON.
+ *
+ * @see kotlinx.serialization.Serializer
+ * @see org.axonframework.serialization.Serializer
+ */
+class KotlinSerializer(
+    private val revisionResolver: RevisionResolver,
+    private val converter: Converter,
+    private val json: Json
+) : Serializer {
+
+    private val serializerCache: MutableMap<Class<*>, KSerializer<*>> = mutableMapOf()
+
+    override fun <T> serialize(`object`: Any?, expectedRepresentation: Class<T>): SerializedObject<T> {
+        try {
+            val type = ObjectUtils.nullSafeTypeOf(`object`)
+            val serializer: KSerializer<Any?> = type.serializer()
+            return when {
+                expectedRepresentation.isAssignableFrom(String::class.java) ->
+                    SimpleSerializedObject(
+                        json.encodeToString(serializer, `object`) as T,
+                        expectedRepresentation,
+                        typeForClass(type)
+                    )
+
+                expectedRepresentation.isAssignableFrom(JsonElement::class.java) ->
+                    SimpleSerializedObject(
+                        json.encodeToJsonElement(serializer, `object`) as T,
+                        expectedRepresentation,
+                        typeForClass(type)
+                    )
+
+                else ->
+                    throw org.axonframework.serialization.SerializationException("Cannot serialize type $type to representation $expectedRepresentation. String and JsonElement are supported.")
+            }
+        } catch (ex: SerializationException) {
+            throw org.axonframework.serialization.SerializationException("Cannot serialize type ${`object`?.javaClass?.name} to representation $expectedRepresentation.", ex)
+        }
+    }
+
+    override fun <T> canSerializeTo(expectedRepresentation: Class<T>): Boolean =
+        expectedRepresentation == String::class.java ||
+                expectedRepresentation == JsonElement::class.java
+
+    override fun <S, T> deserialize(serializedObject: SerializedObject<S>?): T? {
+        try {
+            if (serializedObject == null) {
+                return null
+            }
+
+            if (serializedObject.type == SerializedType.emptyType()) {
+                return null
+            }
+
+            val serializer: KSerializer<T> = serializedObject.serializer()
+            return when {
+                serializedObject.contentType.isAssignableFrom(String::class.java) ->
+                    json.decodeFromString(serializer, serializedObject.data as String)
+
+                serializedObject.contentType.isAssignableFrom(JsonElement::class.java) ->
+                    json.decodeFromJsonElement(serializer, serializedObject.data as JsonElement)
+
+                else ->
+                    throw org.axonframework.serialization.SerializationException("Cannot deserialize from content type ${serializedObject.contentType} to type ${serializedObject.type}. String and JsonElement are supported.")
+            }
+        } catch (ex: SerializationException) {
+            throw org.axonframework.serialization.SerializationException(
+                "Could not deserialize from content type ${serializedObject?.contentType} to type ${serializedObject?.type}",
+                ex
+            )
+        }
+    }
+
+    private fun <S, T> SerializedObject<S>.serializer(): KSerializer<T> =
+        classForType(type).serializer() as KSerializer<T>
+
+    /**
+     * When a type is compiled by the Kotlin compiler extension, a companion object
+     * is created which contains a method `serializer()`. This method should be called
+     * to get the serializer of the class.
+     *
+     * In a 'normal' serialization environment, you would call the MyClass.serializer()
+     * method directly. Here we are in a generic setting, and need reflection to call
+     * the method.
+     *
+     * This method caches the reflection mapping from class to serializer for efficiency.
+     */
+    private fun <T> Class<T>.serializer(): KSerializer<T> =
+        serializerCache.computeIfAbsent(this) {
+            // Class<T>: T must be non-null
+            val kClass = (this as Class<Any>).kotlin
+
+            val companion = kClass.companionObject
+                ?: throw SerializationException("Class $this has no companion object. Did you mark it as @Serializable?")
+
+            val serializerMethod = companion.java.getMethod("serializer")
+                ?: throw SerializationException("Class $this has no serializer() method. Did you mark it as @Serializable?")
+
+            serializerMethod.invoke(kClass.companionObjectInstance) as KSerializer<*>
+        } as KSerializer<T>
+
+    override fun classForType(type: SerializedType): Class<*> =
+        if (SerializedType.emptyType() == type) {
+            Void.TYPE
+        } else {
+            try {
+                Class.forName(type.name)
+            } catch (e: ClassNotFoundException) {
+                UnknownSerializedType::class.java
+            }
+        }
+
+    override fun typeForClass(type: Class<*>): SerializedType =
+        SimpleSerializedType(type.name, revisionOf(type))
+
+    private fun revisionOf(type: Class<*>): String? =
+        revisionResolver.revisionOf(type)
+
+    override fun getConverter(): Converter =
+        converter
+
+}
+
+class KotlinSerializerConfiguration {
+    var revisionResolver: RevisionResolver = AnnotationRevisionResolver()
+    var converter: Converter = ChainingConverter()
+    var json: Json = Json
+}
+
+fun kotlinSerializer(init: KotlinSerializerConfiguration.() -> Unit = {}): KotlinSerializer {
+    val configuration = KotlinSerializerConfiguration()
+    configuration.init()
+    return KotlinSerializer(
+        configuration.revisionResolver,
+        configuration.converter,
+        configuration.json,
+    )
+}
