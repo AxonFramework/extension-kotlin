@@ -136,6 +136,7 @@
       <groupId>org.jetbrains.kotlinx</groupId>
       <artifactId>kotlinx-serialization-json</artifactId>
       <version>${kotlin-serialization.version}</version>
+      <optional>true</optional>
     </dependency>
 
     <!-- Test dependencies -->
@@ -490,6 +491,7 @@
               <groupId>org.jetbrains.kotlin</groupId>
               <artifactId>kotlin-maven-serialization</artifactId>
               <version>${kotlin.version}</version>
+              <optional>true</optional>
             </dependency>
           </dependencies>
         </plugin>

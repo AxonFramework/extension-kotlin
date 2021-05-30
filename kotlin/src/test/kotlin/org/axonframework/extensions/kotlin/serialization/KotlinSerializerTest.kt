@@ -55,6 +55,10 @@ class KotlinSerializerTest {
         assertEquals("SimpleSerializedType[org.axonframework.extensions.kotlin.serialization.KotlinSerializerTest\$TestData] (revision null)", filledSerialized.type.toString())
         assertEquals("""{"name":"name","value":1.23}""", filledSerialized.data)
         assertEquals(String::class.java, filledSerialized.contentType)
+
+        val nullSerialized = serializer.serialize(null, String::class.java)
+        assertEquals("null", nullSerialized.data)
+        assertEquals(String::class.java, nullSerialized.contentType)
     }
 
     @Test

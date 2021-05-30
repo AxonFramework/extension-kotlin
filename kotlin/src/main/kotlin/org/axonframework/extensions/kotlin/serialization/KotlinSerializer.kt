@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2020. Axon Framework
+ * Copyright (c) 2010-2021. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import org.axonframework.common.ObjectUtils
 import org.axonframework.serialization.AnnotationRevisionResolver
 import org.axonframework.serialization.ChainingConverter
@@ -31,7 +32,6 @@ import org.axonframework.serialization.Serializer
 import org.axonframework.serialization.SimpleSerializedObject
 import org.axonframework.serialization.SimpleSerializedType
 import org.axonframework.serialization.UnknownSerializedType
-import kotlin.reflect.KClass
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.companionObjectInstance
 
@@ -39,8 +39,12 @@ import kotlin.reflect.full.companionObjectInstance
  * Implementation of Axon Serializer that uses a kotlinx.serialization implementation.
  * The serialized format is JSON.
  *
+ * The DSL function kotlinSerializer can be used to easily configure the parameters
+ * for this serializer.
+ *
  * @see kotlinx.serialization.Serializer
  * @see org.axonframework.serialization.Serializer
+ * @see kotlinSerializer
  */
 class KotlinSerializer(
     private val revisionResolver: RevisionResolver,
@@ -50,21 +54,20 @@ class KotlinSerializer(
 
     private val serializerCache: MutableMap<Class<*>, KSerializer<*>> = mutableMapOf()
 
-    override fun <T> serialize(`object`: Any?, expectedRepresentation: Class<T>): SerializedObject<T> {
+    override fun <T> serialize(value: Any?, expectedRepresentation: Class<T>): SerializedObject<T> {
         try {
-            val type = ObjectUtils.nullSafeTypeOf(`object`)
-            val serializer: KSerializer<Any?> = type.serializer()
+            val type = ObjectUtils.nullSafeTypeOf(value)
             return when {
                 expectedRepresentation.isAssignableFrom(String::class.java) ->
                     SimpleSerializedObject(
-                        json.encodeToString(serializer, `object`) as T,
+                        (if (value == null) "null" else json.encodeToString(type.serializer(), value)) as T,
                         expectedRepresentation,
                         typeForClass(type)
                     )
 
                 expectedRepresentation.isAssignableFrom(JsonElement::class.java) ->
                     SimpleSerializedObject(
-                        json.encodeToJsonElement(serializer, `object`) as T,
+                        (if (value == null) JsonNull else json.encodeToJsonElement(type.serializer(), value)) as T,
                         expectedRepresentation,
                         typeForClass(type)
                     )
@@ -73,7 +76,7 @@ class KotlinSerializer(
                     throw org.axonframework.serialization.SerializationException("Cannot serialize type $type to representation $expectedRepresentation. String and JsonElement are supported.")
             }
         } catch (ex: SerializationException) {
-            throw org.axonframework.serialization.SerializationException("Cannot serialize type ${`object`?.javaClass?.name} to representation $expectedRepresentation.", ex)
+            throw org.axonframework.serialization.SerializationException("Cannot serialize type ${value?.javaClass?.name} to representation $expectedRepresentation.", ex)
         }
     }
 
@@ -149,8 +152,12 @@ class KotlinSerializer(
             }
         }
 
-    override fun typeForClass(type: Class<*>): SerializedType =
-        SimpleSerializedType(type.name, revisionOf(type))
+    override fun typeForClass(type: Class<*>?): SerializedType =
+        if (type == null || Void.TYPE == type || Void::class.java == type) {
+            SimpleSerializedType.emptyType()
+        } else {
+            SimpleSerializedType(type.name, revisionResolver.revisionOf(type))
+        }
 
     private fun revisionOf(type: Class<*>): String? =
         revisionResolver.revisionOf(type)
@@ -160,12 +167,33 @@ class KotlinSerializer(
 
 }
 
+/**
+ * Configuration which will be used to construct a KotlinSerializer.
+ * This class is used in the kotlinSerializer DSL function.
+ *
+ * @see KotlinSerializer
+ * @see kotlinSerializer
+ */
 class KotlinSerializerConfiguration {
     var revisionResolver: RevisionResolver = AnnotationRevisionResolver()
     var converter: Converter = ChainingConverter()
     var json: Json = Json
 }
 
+/**
+ * DSL function to configure a new KotlinSerializer.
+ *
+ * Usage example:
+ * <code>
+ *     val serializer: KotlinSerializer = kotlinSerializer {
+ *          json = Json
+ *          converter = ChainingConverter()
+ *          revisionResolver = AnnotationRevisionResolver()
+ *     }
+ * </code>
+ *
+ * @see KotlinSerializer
+ */
 fun kotlinSerializer(init: KotlinSerializerConfiguration.() -> Unit = {}): KotlinSerializer {
     val configuration = KotlinSerializerConfiguration()
     configuration.init()
