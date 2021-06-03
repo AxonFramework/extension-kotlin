@@ -15,6 +15,7 @@ import org.axonframework.serialization.UnknownSerializedType
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.io.InputStream
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 
@@ -34,7 +35,9 @@ class KotlinSerializerTest {
         val serializer = kotlinSerializer()
 
         assertTrue(serializer.canSerializeTo(String::class.java))
+        assertTrue(serializer.canSerializeTo(ByteArray::class.java))
         assertTrue(serializer.canSerializeTo(JsonElement::class.java))
+        assertTrue(serializer.canSerializeTo(InputStream::class.java))
     }
 
     @Test
@@ -119,6 +122,20 @@ class KotlinSerializerTest {
         val serializer = kotlinSerializer()
 
         assertNotNull(serializer.deserialize(serializer.serialize(TestData("name", null), ByteArray::class.java)))
+    }
+
+    @Test
+    fun `JSON elements`() {
+        val serializer = kotlinSerializer()
+
+        assertNotNull(serializer.deserialize(serializer.serialize(TestData("name", null), JsonElement::class.java)))
+    }
+
+    @Test
+    fun `input stream`() {
+        val serializer = kotlinSerializer()
+
+        assertNotNull(serializer.deserialize(serializer.serialize(TestData("name", null), InputStream::class.java)))
     }
 
     @Test

@@ -62,39 +62,31 @@ class KotlinSerializer(
     override fun <T> serialize(value: Any?, expectedRepresentation: Class<T>): SerializedObject<T> {
         try {
             val type = ObjectUtils.nullSafeTypeOf(value)
-            return when {
-                expectedRepresentation.isAssignableFrom(String::class.java) ->
-                    SimpleSerializedObject(
-                        (if (value == null) "null" else json.encodeToString(type.serializer(), value)) as T,
-                        expectedRepresentation,
-                        typeForClass(type)
-                    )
 
-                expectedRepresentation.isAssignableFrom(ByteArray::class.java) ->
-                    SimpleSerializedObject(
-                        (if (value == null) ByteArray(0) else json.encodeToString(type.serializer(), value).toByteArray()) as T,
-                        expectedRepresentation,
-                        typeForClass(type)
-                    )
-
-                expectedRepresentation.isAssignableFrom(JsonElement::class.java) ->
-                    SimpleSerializedObject(
-                        (if (value == null) JsonNull else json.encodeToJsonElement(type.serializer(), value)) as T,
-                        expectedRepresentation,
-                        typeForClass(type)
-                    )
-
-                else ->
-                    throw AxonSerializationException("Cannot serialize type $type to representation $expectedRepresentation. String and JsonElement are supported.")
+            if (expectedRepresentation.isAssignableFrom(JsonElement::class.java)) {
+                return SimpleSerializedObject(
+                    (if (value == null) JsonNull else json.encodeToJsonElement(type.serializer(), value)) as T,
+                    expectedRepresentation,
+                    typeForClass(type)
+                )
             }
+
+            // By default, encode to String. This can be converted to other types by the converter
+            val stringSerialized: SerializedObject<String> = SimpleSerializedObject(
+                (if (value == null) "null" else json.encodeToString(type.serializer(), value)),
+                String::class.java,
+                typeForClass(type)
+            )
+
+            return converter.convert(stringSerialized, expectedRepresentation)
         } catch (ex: SerializationException) {
             throw AxonSerializationException("Cannot serialize type ${value?.javaClass?.name} to representation $expectedRepresentation.", ex)
         }
     }
 
     override fun <T> canSerializeTo(expectedRepresentation: Class<T>): Boolean =
-        expectedRepresentation == String::class.java ||
-                expectedRepresentation == JsonElement::class.java
+        expectedRepresentation == JsonElement::class.java ||
+                converter.canConvert(String::class.java, expectedRepresentation)
 
     override fun <S, T> deserialize(serializedObject: SerializedObject<S>?): T? {
         try {
@@ -112,19 +104,13 @@ class KotlinSerializer(
             }
 
             val serializer: KSerializer<T> = foundType.serializer() as KSerializer<T>
-            return when {
-                serializedObject.contentType.isAssignableFrom(String::class.java) ->
-                    json.decodeFromString(serializer, serializedObject.data as String)
 
-                serializedObject.contentType.isAssignableFrom(ByteArray::class.java) ->
-                    json.decodeFromString(serializer, (serializedObject.data as ByteArray).decodeToString())
-
-                serializedObject.contentType.isAssignableFrom(JsonElement::class.java) ->
-                    json.decodeFromJsonElement(serializer, serializedObject.data as JsonElement)
-
-                else ->
-                    throw AxonSerializationException("Cannot deserialize from content type ${serializedObject.contentType} to type ${serializedObject.type}. String and JsonElement are supported.")
+            if (serializedObject.contentType.isAssignableFrom(JsonElement::class.java)) {
+                return json.decodeFromJsonElement(serializer, serializedObject.data as JsonElement)
             }
+
+            val stringSerialized: SerializedObject<String> = converter.convert(serializedObject, String::class.java)
+            return json.decodeFromString(serializer, stringSerialized.data)
         } catch (ex: SerializationException) {
             throw AxonSerializationException(
                 "Could not deserialize from content type ${serializedObject?.contentType} to type ${serializedObject?.type}",
