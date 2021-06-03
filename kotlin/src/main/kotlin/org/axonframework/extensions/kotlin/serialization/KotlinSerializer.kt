@@ -16,6 +16,7 @@
 
 package org.axonframework.extensions.kotlin.serialization
 
+import kotlinx.serialization.ContextualSerializer
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.SerializationException
 import kotlinx.serialization.json.Json
@@ -134,6 +135,10 @@ class KotlinSerializer(
      * method directly. Here we are in a generic setting, and need reflection to call
      * the method.
      *
+     * If there is no `serializer` method, a ContextualSerializer will be created. This
+     * serializer requires manual configuration of the SerializersModule containing a
+     * KSerializer which will be used when this class is serialized.
+     *
      * This method caches the reflection mapping from class to serializer for efficiency.
      */
     private fun <T> Class<T>.serializer(): KSerializer<T> =
@@ -142,10 +147,10 @@ class KotlinSerializer(
             val kClass = (this as Class<Any>).kotlin
 
             val companion = kClass.companionObject
-                ?: throw SerializationException("Class $this has no companion object. Did you mark it as @Serializable?")
+                ?: return@computeIfAbsent ContextualSerializer(kClass)
 
             val serializerMethod = companion.java.getMethod("serializer")
-                ?: throw SerializationException("Class $this has no serializer() method. Did you mark it as @Serializable?")
+                ?: return@computeIfAbsent ContextualSerializer(kClass)
 
             serializerMethod.invoke(kClass.companionObjectInstance) as KSerializer<*>
         } as KSerializer<T>
@@ -167,9 +172,6 @@ class KotlinSerializer(
         } else {
             SimpleSerializedType(type.name, revisionResolver.revisionOf(type))
         }
-
-    private fun revisionOf(type: Class<*>): String? =
-        revisionResolver.revisionOf(type)
 
     override fun getConverter(): Converter =
         converter
