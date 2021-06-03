@@ -47,8 +47,8 @@ import kotlin.reflect.full.companionObjectInstance
  * @see kotlinSerializer
  */
 class KotlinSerializer(
-    private val revisionResolver: RevisionResolver,
-    private val converter: Converter,
+    private val revisionResolver: RevisionResolver = AnnotationRevisionResolver(),
+    private val converter: Converter = ChainingConverter(),
     private val json: Json
 ) : Serializer {
 
