@@ -54,7 +54,7 @@ import org.axonframework.serialization.SerializationException as AxonSerializati
 class KotlinSerializer(
     private val revisionResolver: RevisionResolver = AnnotationRevisionResolver(),
     private val converter: Converter = ChainingConverter(),
-    private val json: Json
+    private val json: Json = Json,
 ) : Serializer {
 
     private val serializerCache: MutableMap<Class<*>, KSerializer<*>> = mutableMapOf()
