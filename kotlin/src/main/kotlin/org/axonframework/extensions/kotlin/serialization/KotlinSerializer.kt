@@ -34,6 +34,7 @@ import org.axonframework.serialization.SimpleSerializedType
 import org.axonframework.serialization.UnknownSerializedType
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.companionObjectInstance
+import org.axonframework.serialization.SerializationException as AxonSerializationException
 
 /**
  * Implementation of Axon Serializer that uses a kotlinx.serialization implementation.
@@ -76,10 +77,10 @@ class KotlinSerializer(
                     )
 
                 else ->
-                    throw org.axonframework.serialization.SerializationException("Cannot serialize type $type to representation $expectedRepresentation. String and JsonElement are supported.")
+                    throw AxonSerializationException("Cannot serialize type $type to representation $expectedRepresentation. String and JsonElement are supported.")
             }
         } catch (ex: SerializationException) {
-            throw org.axonframework.serialization.SerializationException("Cannot serialize type ${value?.javaClass?.name} to representation $expectedRepresentation.", ex)
+            throw AxonSerializationException("Cannot serialize type ${value?.javaClass?.name} to representation $expectedRepresentation.", ex)
         }
     }
 
@@ -97,7 +98,12 @@ class KotlinSerializer(
                 return null
             }
 
-            val serializer: KSerializer<T> = serializedObject.serializer()
+            val foundType = classForType(serializedObject.type)
+            if (UnknownSerializedType::class.java.isAssignableFrom(foundType)) {
+                return UnknownSerializedType(this, serializedObject) as T
+            }
+
+            val serializer: KSerializer<T> = foundType.serializer() as KSerializer<T>
             return when {
                 serializedObject.contentType.isAssignableFrom(String::class.java) ->
                     json.decodeFromString(serializer, serializedObject.data as String)
@@ -106,10 +112,10 @@ class KotlinSerializer(
                     json.decodeFromJsonElement(serializer, serializedObject.data as JsonElement)
 
                 else ->
-                    throw org.axonframework.serialization.SerializationException("Cannot deserialize from content type ${serializedObject.contentType} to type ${serializedObject.type}. String and JsonElement are supported.")
+                    throw AxonSerializationException("Cannot deserialize from content type ${serializedObject.contentType} to type ${serializedObject.type}. String and JsonElement are supported.")
             }
         } catch (ex: SerializationException) {
-            throw org.axonframework.serialization.SerializationException(
+            throw AxonSerializationException(
                 "Could not deserialize from content type ${serializedObject?.contentType} to type ${serializedObject?.type}",
                 ex
             )
