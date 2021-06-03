@@ -115,6 +115,13 @@ class KotlinSerializerTest {
     }
 
     @Test
+    fun `byte arrays`() {
+        val serializer = kotlinSerializer()
+
+        assertNotNull(serializer.deserialize(serializer.serialize(TestData("name", null), ByteArray::class.java)))
+    }
+
+    @Test
     fun `example of custom serializer for ConfigToken`() {
         val serializer = kotlinSerializer {
             json = Json {

@@ -70,6 +70,13 @@ class KotlinSerializer(
                         typeForClass(type)
                     )
 
+                expectedRepresentation.isAssignableFrom(ByteArray::class.java) ->
+                    SimpleSerializedObject(
+                        (if (value == null) ByteArray(0) else json.encodeToString(type.serializer(), value).toByteArray()) as T,
+                        expectedRepresentation,
+                        typeForClass(type)
+                    )
+
                 expectedRepresentation.isAssignableFrom(JsonElement::class.java) ->
                     SimpleSerializedObject(
                         (if (value == null) JsonNull else json.encodeToJsonElement(type.serializer(), value)) as T,
@@ -108,6 +115,9 @@ class KotlinSerializer(
             return when {
                 serializedObject.contentType.isAssignableFrom(String::class.java) ->
                     json.decodeFromString(serializer, serializedObject.data as String)
+
+                serializedObject.contentType.isAssignableFrom(ByteArray::class.java) ->
+                    json.decodeFromString(serializer, (serializedObject.data as ByteArray).decodeToString())
 
                 serializedObject.contentType.isAssignableFrom(JsonElement::class.java) ->
                     json.decodeFromJsonElement(serializer, serializedObject.data as JsonElement)
