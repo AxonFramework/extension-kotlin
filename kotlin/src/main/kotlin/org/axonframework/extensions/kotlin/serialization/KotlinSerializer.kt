@@ -45,6 +45,9 @@ import kotlin.reflect.full.companionObjectInstance
  * @see kotlinx.serialization.Serializer
  * @see org.axonframework.serialization.Serializer
  * @see kotlinSerializer
+ *
+ * @since 0.2.0
+ * @author Hidde Wieringa
  */
 class KotlinSerializer(
     private val revisionResolver: RevisionResolver = AnnotationRevisionResolver(),
