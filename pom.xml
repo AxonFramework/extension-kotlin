@@ -32,17 +32,17 @@
   </modules>
 
   <properties>
-    <axon.version>4.5.1</axon.version>
+    <axon.version>4.5.3</axon.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <kotlin.version>1.5.10</kotlin.version>
-    <kotlin-logging.version>2.0.8</kotlin-logging.version>
+    <kotlin.version>1.5.30</kotlin.version>
+    <kotlin-logging.version>2.0.11</kotlin-logging.version>
     <kotlin-serialization.version>1.2.1</kotlin-serialization.version>
-    <jackson-kotlin.version>2.12.3</jackson-kotlin.version>
-    <mockk.version>1.11.0</mockk.version>
-    <junit.jupiter.version>5.7.2</junit.jupiter.version>
-    <slf4j.version>1.7.30</slf4j.version>
+    <jackson-kotlin.version>2.12.5</jackson-kotlin.version>
+    <mockk.version>1.12.0</mockk.version>
+    <junit.jupiter.version>5.8.0</junit.jupiter.version>
+    <slf4j.version>1.7.32</slf4j.version>
     <log4j.version>2.13.3</log4j.version>
-    <dokka.version>1.4.32</dokka.version>
+    <dokka.version>1.5.30</dokka.version>
 
     <!--
     Deactivate dokka by default, and make the build faster for all projects.
@@ -410,7 +410,7 @@
         <plugin>
           <!-- just to make sure deployed artifacts are always built (and tested) using JDK 8+ -->
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>1.4.2.jenkins-1</version>
+          <version>3.0.0</version>
           <executions>
             <execution>
               <id>enforce-java</id>
