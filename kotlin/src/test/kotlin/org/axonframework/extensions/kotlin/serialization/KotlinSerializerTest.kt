@@ -32,7 +32,7 @@ class KotlinSerializerTest {
 
     @Test
     fun canSerializeTo() {
-        val serializer = kotlinSerializer()
+        val serializer = KotlinSerializer()
 
         assertTrue(serializer.canSerializeTo(String::class.java))
         assertTrue(serializer.canSerializeTo(ByteArray::class.java))
@@ -42,17 +42,18 @@ class KotlinSerializerTest {
 
     @Test
     fun `configuration options`() {
-        val serializer = kotlinSerializer {
-            json = Json
-            converter = ChainingConverter()
-            revisionResolver = AnnotationRevisionResolver()
-        }
+        val serializer = KotlinSerializer(
+            revisionResolver = AnnotationRevisionResolver(),
+            converter = ChainingConverter(),
+            json = Json,
+        )
+
         assertNotNull(serializer)
     }
 
     @Test
     fun serialize() {
-        val serializer = kotlinSerializer()
+        val serializer = KotlinSerializer()
 
         val emptySerialized = serializer.serialize(TestData("", null), String::class.java)
         assertEquals("SimpleSerializedType[org.axonframework.extensions.kotlin.serialization.KotlinSerializerTest\$TestData] (revision null)", emptySerialized.type.toString())
@@ -71,7 +72,7 @@ class KotlinSerializerTest {
 
     @Test
     fun deserialize() {
-        val serializer = kotlinSerializer()
+        val serializer = KotlinSerializer()
 
         val nullDeserialized: Any? = serializer.deserialize(
             SimpleSerializedObject(
@@ -119,34 +120,34 @@ class KotlinSerializerTest {
 
     @Test
     fun `byte arrays`() {
-        val serializer = kotlinSerializer()
+        val serializer = KotlinSerializer()
 
         assertNotNull(serializer.deserialize(serializer.serialize(TestData("name", null), ByteArray::class.java)))
     }
 
     @Test
     fun `JSON elements`() {
-        val serializer = kotlinSerializer()
+        val serializer = KotlinSerializer()
 
         assertNotNull(serializer.deserialize(serializer.serialize(TestData("name", null), JsonElement::class.java)))
     }
 
     @Test
     fun `input stream`() {
-        val serializer = kotlinSerializer()
+        val serializer = KotlinSerializer()
 
         assertNotNull(serializer.deserialize(serializer.serialize(TestData("name", null), InputStream::class.java)))
     }
 
     @Test
     fun `example of custom serializer for ConfigToken`() {
-        val serializer = kotlinSerializer {
+        val serializer = KotlinSerializer(
             json = Json {
                 serializersModule = SerializersModule {
                     contextual(ConfigTokenSerializer())
                 }
             }
-        }
+        )
 
         val tokenBefore = ConfigToken(mapOf("test" to "value"))
         val serialized = serializer.serialize(tokenBefore, String::class.java)
