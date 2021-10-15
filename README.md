@@ -84,7 +84,19 @@ If you want to build the extension locally, you need to check it out from GiHub 
 
 Please execute the following command line if you are interested in producing KDoc and Source archives:
 
-    ./mvnw clean install -Pjavadoc-and-sources
+    ./mvnw clean install -Pdocs-and-sources
     
+### Collecting code coverage data
+
+If you are interested in test code coverage, please run the following command:
+
+    ./mvnw clean install -Pcoverage
+
+### Building example project
+
+The project includes an example module demonstrating usage of the extension. If you want to skip the example
+build, please run the following command line: 
+
+    ./mvnw clean install -DskipExamples
  
 ---

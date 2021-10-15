@@ -28,6 +28,8 @@
   <modules>
     <module>kotlin</module>
     <module>kotlin-test</module>
+    <module>kotlin-springboot-autoconfigure</module>
+    <module>kotlin-springboot-starter</module>
   </modules>
 
   <properties>
@@ -42,6 +44,8 @@
     <log4j.version>2.13.3</log4j.version>
     <dokka.version>1.5.31</dokka.version>
 
+    <spring-boot.version>2.5.5</spring-boot.version>
+
     <!--
     Deactivate dokka by default, and make the build faster for all projects.
     The dokka.skip will be set to true on relevant projects only containing Kotlin code
@@ -52,6 +56,27 @@
 
   <dependencyManagement>
     <dependencies>
+
+      <!-- Project dependencies -->
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>axon-kotlin</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>axon-kotlin-springboot-autoconfigure</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>${project.groupId}</groupId>
+        <artifactId>axon-kotlin-springboot-starter</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <!-- first: Kotlin Import -->
       <dependency>
         <groupId>org.jetbrains.kotlin</groupId>
         <artifactId>kotlin-bom</artifactId>
@@ -60,6 +85,16 @@
         <scope>import</scope>
       </dependency>
 
+      <!-- second: SpringBoot Import (will not mess-up the kotlin.version) -->
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring-boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <!-- AxonFramework -->
       <dependency>
         <groupId>org.axonframework</groupId>
         <artifactId>axon-configuration</artifactId>
@@ -67,10 +102,19 @@
       </dependency>
       <dependency>
         <groupId>org.axonframework</groupId>
+        <artifactId>axon-modelling</artifactId>
+        <version>${axon.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.axonframework</groupId>
         <artifactId>axon-test</artifactId>
         <version>${axon.version}</version>
       </dependency>
-
+      <dependency>
+        <groupId>org.axonframework</groupId>
+        <artifactId>axon-spring-boot-starter</artifactId>
+        <version>${axon.version}</version>
+      </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.module</groupId>
         <artifactId>jackson-module-kotlin</artifactId>
@@ -136,6 +180,11 @@
       <scope>test</scope>
     </dependency>
     <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.jetbrains.kotlin</groupId>
       <artifactId>kotlin-test-junit5</artifactId>
       <scope>test</scope>
@@ -150,7 +199,6 @@
       <artifactId>slf4j-simple</artifactId>
       <scope>test</scope>
     </dependency>
-
   </dependencies>
 
   <!-- License Stuff -->
@@ -207,12 +255,14 @@
           <plugin>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
-            <version>0.8.7</version>
             <executions>
               <execution>
                 <goals>
                   <goal>prepare-agent</goal>
                 </goals>
+                <configuration>
+                  <propertyName>surefireArgLine</propertyName>
+                </configuration>
               </execution>
               <execution>
                 <id>report</id>
@@ -245,6 +295,19 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+
+    <profile>
+      <!-- Example module, should be skipped during release -->
+      <id>example</id>
+      <activation>
+        <property>
+          <name>!skipExamples</name>
+        </property>
+      </activation>
+      <modules>
+        <module>kotlin-example</module>
+      </modules>
     </profile>
 
   </profiles>
@@ -349,6 +412,7 @@
               <include>**/*Test_*.java</include>
               <include>**/*Tests_*.java</include>
             </includes>
+            <argLine>${surefireArgLine}</argLine>
             <systemPropertyVariables>
               <slf4j.version>${slf4j.version}</slf4j.version>
               <log4j.version>${log4j.version}</log4j.version>
@@ -432,6 +496,7 @@
             </args>
             <compilerPlugins>
               <plugin>no-arg</plugin>
+              <plugin>spring</plugin>
               <plugin>all-open</plugin>
             </compilerPlugins>
             <pluginOptions>
@@ -480,6 +545,17 @@
         </plugin>
       </plugins>
     </pluginManagement>
+
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-enforcer-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.jetbrains.kotlin</groupId>
+        <artifactId>kotlin-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
   </build>
 
   <repositories>
