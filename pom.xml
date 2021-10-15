@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  ~ Copyright (c) 2010-2020. Axon Framework
+  ~ Copyright (c) 2010-2021. Axon Framework
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -15,36 +15,36 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <name>Axon Framework - Kotlin Extension - Parent</name>
+  <name>Axon Framework - Kotlin Extension</name>
   <description>Extension for Axon Framework that provides Kotlin utilities.</description>
 
   <groupId>org.axonframework.extensions.kotlin</groupId>
   <artifactId>axon-kotlin-parent</artifactId>
-  <version>0.2.0-SNAPSHOT</version>
+  <version>0.3.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <modules>
     <module>kotlin</module>
+    <module>kotlin-test</module>
     <module>kotlin-springboot-autoconfigure</module>
     <module>kotlin-springboot-starter</module>
   </modules>
 
   <properties>
-    <axon.version>4.4.3</axon.version>
+    <axon.version>4.5.4</axon.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <kotlin.version>1.4.10</kotlin.version>
-    <kotlin-logging.version>2.0.3</kotlin-logging.version>
-    <jackson-kotlin.version>2.11.3</jackson-kotlin.version>
-    <mockk.version>1.10.2</mockk.version>
-
-    <junit.jupiter.version>5.7.0</junit.jupiter.version>
-    <slf4j.version>1.7.30</slf4j.version>
+    <kotlin.version>1.5.31</kotlin.version>
+    <kotlin-logging.version>2.0.11</kotlin-logging.version>
+    <jackson-kotlin.version>2.13.0</jackson-kotlin.version>
+    <mockk.version>1.12.0</mockk.version>
+    <junit.jupiter.version>5.8.1</junit.jupiter.version>
+    <slf4j.version>1.7.32</slf4j.version>
     <log4j.version>2.13.3</log4j.version>
-    <springboot.version>2.3.2.RELEASE</springboot.version>
-    <dokka.version>1.4.10.2</dokka.version>
+    <dokka.version>1.5.31</dokka.version>
+
+    <spring-boot.version>2.5.5</spring-boot.version>
 
     <!--
     Deactivate dokka by default, and make the build faster for all projects.
@@ -89,9 +89,9 @@
       <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-dependencies</artifactId>
-        <version>${springboot.version}</version>
-        <scope>import</scope>
+        <version>${spring-boot.version}</version>
         <type>pom</type>
+        <scope>import</scope>
       </dependency>
 
       <!-- AxonFramework -->
@@ -127,17 +127,7 @@
       </dependency>
       <dependency>
         <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-api</artifactId>
-        <version>${junit.jupiter.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-params</artifactId>
-        <version>${junit.jupiter.version}</version>
-      </dependency>
-      <dependency>
-        <groupId>org.junit.jupiter</groupId>
-        <artifactId>junit-jupiter-engine</artifactId>
+        <artifactId>junit-jupiter</artifactId>
         <version>${junit.jupiter.version}</version>
       </dependency>
       <dependency>
@@ -160,7 +150,6 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-
 
   <dependencies>
     <dependency>
@@ -231,11 +220,9 @@
   </issueManagement>
 
   <profiles>
-    <!-- Profile to sign and release artifacts -->
     <profile>
       <id>release-sign-artifacts</id>
       <activation>
-        <!-- Activate by perform release property -->
         <property>
           <name>performRelease</name>
           <value>true</value>
@@ -251,6 +238,7 @@
                 <id>sign-artifacts</id>
                 <phase>verify</phase>
                 <goals>
+                  <!--suppress MavenModelInspection -->
                   <goal>sign</goal>
                 </goals>
               </execution>
@@ -261,7 +249,6 @@
     </profile>
 
     <profile>
-      <!-- Meter coverage -->
       <id>coverage</id>
       <build>
         <plugins>
@@ -325,7 +312,6 @@
 
   </profiles>
 
-
   <build>
     <defaultGoal>clean install</defaultGoal>
     <sourceDirectory>${project.basedir}/src/main/kotlin</sourceDirectory>
@@ -350,7 +336,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-gpg-plugin</artifactId>
-          <version>1.6</version>
+          <version>3.0.1</version>
         </plugin>
         <plugin>
           <artifactId>maven-deploy-plugin</artifactId>
@@ -359,7 +345,7 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.6</version>
+          <version>0.8.7</version>
         </plugin>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
@@ -478,7 +464,7 @@
         <plugin>
           <!-- just to make sure deployed artifacts are always built (and tested) using JDK 8+ -->
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>1.4.2.jenkins-1</version>
+          <version>3.0.0</version>
           <executions>
             <execution>
               <id>enforce-java</id>
@@ -621,7 +607,7 @@
     </developer>
     <developer>
       <name>Steven van Beelen</name>
-      <email>steven.vanbeeelen@axoniq.io</email>
+      <email>steven.vanbeelen@axoniq.io</email>
       <organization>AxonIQ</organization>
       <organizationUrl>https://axoniq.io</organizationUrl>
       <roles>
