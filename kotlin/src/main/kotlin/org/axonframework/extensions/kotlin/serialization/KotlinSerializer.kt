@@ -85,7 +85,7 @@ class KotlinSerializer(
     }
 
     override fun <T> canSerializeTo(expectedRepresentation: Class<T>): Boolean =
-        expectedRepresentation == JsonElement::class.java ||
+        expectedRepresentation.isAssignableFrom(JsonElement::class.java) ||
                 converter.canConvert(String::class.java, expectedRepresentation)
 
     override fun <S, T> deserialize(serializedObject: SerializedObject<S>?): T? {
