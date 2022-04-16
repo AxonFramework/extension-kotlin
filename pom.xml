@@ -15,15 +15,14 @@
   ~ limitations under the License.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <name>Axon Framework - Kotlin Extension</name>
   <description>Extension for Axon Framework that provides Kotlin utilities.</description>
 
   <groupId>org.axonframework.extensions.kotlin</groupId>
   <artifactId>axon-kotlin-parent</artifactId>
-  <version>0.2.0-SNAPSHOT</version>
+  <version>0.3.0-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <modules>
@@ -32,17 +31,17 @@
   </modules>
 
   <properties>
-    <axon.version>4.5.3</axon.version>
+    <axon.version>4.5.9</axon.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <kotlin.version>1.5.30</kotlin.version>
-    <kotlin-logging.version>2.0.11</kotlin-logging.version>
+    <kotlin.version>1.6.20</kotlin.version>
+    <jackson-kotlin.version>2.13.2</jackson-kotlin.version>
+    <kotlin-logging.version>2.1.21</kotlin-logging.version>
     <kotlin-serialization.version>1.2.1</kotlin-serialization.version>
-    <jackson-kotlin.version>2.12.5</jackson-kotlin.version>
-    <mockk.version>1.12.0</mockk.version>
-    <junit.jupiter.version>5.8.0</junit.jupiter.version>
-    <slf4j.version>1.7.32</slf4j.version>
+    <mockk.version>1.12.3</mockk.version>
+    <junit.jupiter.version>5.8.2</junit.jupiter.version>
+    <slf4j.version>1.7.36</slf4j.version>
     <log4j.version>2.13.3</log4j.version>
-    <dokka.version>1.5.30</dokka.version>
+    <dokka.version>1.6.20</dokka.version>
 
     <!--
     Deactivate dokka by default, and make the build faster for all projects.
@@ -217,7 +216,7 @@
           <plugin>
             <groupId>org.jacoco</groupId>
             <artifactId>jacoco-maven-plugin</artifactId>
-            <version>0.8.7</version>
+            <version>0.8.8</version>
             <executions>
               <execution>
                 <goals>
@@ -267,7 +266,7 @@
       <plugins>
         <plugin>
           <artifactId>maven-clean-plugin</artifactId>
-          <version>3.1.0</version>
+          <version>3.2.0</version>
         </plugin>
         <plugin>
           <artifactId>maven-install-plugin</artifactId>
@@ -292,11 +291,11 @@
         <plugin>
           <groupId>org.jacoco</groupId>
           <artifactId>jacoco-maven-plugin</artifactId>
-          <version>0.8.7</version>
+          <version>0.8.8</version>
         </plugin>
         <plugin>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.8.1</version>
+          <version>3.10.1</version>
           <configuration>
             <source>1.8</source>
             <target>1.8</target>
@@ -385,7 +384,7 @@
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>3.2.0</version>
+          <version>3.2.2</version>
           <configuration>
             <archive>
               <manifest>
