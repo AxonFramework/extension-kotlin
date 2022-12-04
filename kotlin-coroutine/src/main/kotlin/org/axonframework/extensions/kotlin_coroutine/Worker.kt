@@ -1,8 +1,6 @@
 package org.axonframework.extensions.kotlin_coroutine
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import mu.KotlinLogging
 import org.axonframework.eventhandling.Segment
 import org.axonframework.eventhandling.TrackedEventMessage
@@ -19,6 +17,7 @@ import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 private val logger = KotlinLogging.logger {}
+
 class Worker(
     private val processorName: String,
     private val tokenStore: TokenStore,
@@ -27,7 +26,8 @@ class Worker(
     private val tokenClaimInterval: Duration,
     private val workerContext: CoroutineContext,
     private var currentToken: TrackingToken,
-    private val strategy: Strategy
+    private val strategy: Strategy,
+    private val exceptionHandler: ProcessingErrorHandler
 ) {
     private val active = AtomicBoolean(false)
     private var lowestToken = currentToken
@@ -37,6 +37,7 @@ class Worker(
     private var processingPackage: ProcessingPackage? = null
     private val activePackages = AtomicInteger(0)
     private val bufferSize = 1024
+    private val jobList = mutableListOf<Job>()
 
     fun take(processorTask: ProcessorTask, event: TrackedEventMessage<Any>, nextHasSameToken: Boolean) {
         if (!active.get()) {
@@ -66,7 +67,7 @@ class Worker(
         return processingQueue.size > bufferSize
     }
 
-    private fun processingStarting(token: TrackingToken) {
+    private suspend fun processingStarting(token: TrackingToken) {
         highestToken = token
         activeTokens.add(token)
         when (strategy) {
@@ -98,7 +99,7 @@ class Worker(
         activePackages.decrementAndGet()
     }
 
-    private fun store() {
+    private suspend fun store() {
         try {
             tokenStore.storeToken(currentToken, processorName, segment.segmentId)
         } catch (e: UnableToClaimTokenException) {
@@ -132,27 +133,54 @@ class Worker(
         processingStarting(token)
         CoroutineScope(workerContext).launch {
             processingPackage.entries.forEach {
-                it.processorTask.task.invoke(it.message)
+                try {
+                    it.processorTask.task.invoke(it.message)
+                } catch (e: Exception) {
+                    logger.debug { "Encountered exception processing event with id: [${it.message.identifier}], cause: ${e.cause}" }
+                    handleProcessingError(e, it.message, it.processorTask.task)
+                }
             }
             processingCompleted(token)
+        }
+    }
+
+    private suspend fun handleProcessingError(
+        exception: Exception, message: TrackedEventMessage<Any>, task: suspend (TrackedEventMessage<Any>) -> Unit
+    ) {
+        try {
+            exceptionHandler.onError(exception, message, task)
+        } catch (finalException: Exception) {
+            logger.warn("Stop processing on segment: [${segment.segmentId}], because encountered error.", finalException)
+            stop()
         }
     }
 
     fun start() {
         logger.info("Worker started")
         if (active.compareAndSet(false, true)) {
-            CoroutineScope(workerContext).launch { processLoop() }
-            CoroutineScope(workerContext).launch { claimLoop() }
+            jobList.add(CoroutineScope(workerContext).launch { processLoop() })
+            jobList.add(CoroutineScope(workerContext).launch { claimLoop() })
         }
     }
 
-    fun stop() {
+    suspend fun stop() {
         active.set(false)
+        jobList.forEach { it.cancelAndJoin() }
     }
 
     enum class Strategy {
         AtMostOnce,
         AtLeastOnce
+    }
+}
+
+interface ProcessingErrorHandler {
+    suspend fun onError(exception: Exception, message: TrackedEventMessage<Any>, task: suspend (TrackedEventMessage<Any>) -> Unit)
+}
+
+val propagatingErrorHandler = object : ProcessingErrorHandler {
+    override suspend fun onError(exception: Exception, message: TrackedEventMessage<Any>, task: suspend (TrackedEventMessage<Any>) -> Unit) {
+        throw exception
     }
 }
 

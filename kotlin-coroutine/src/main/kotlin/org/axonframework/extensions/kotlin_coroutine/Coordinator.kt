@@ -132,7 +132,7 @@ class Coordinator(
                 try {
                     val token = tokenStore.fetchToken(processorName, it)  ?: FirstToken
                     result = result?.lowerBound(token) ?: token
-                    val worker = Worker(processorName, tokenStore, concurrentPerSegment, it, tokenClaimInterval, workerContext, token, strategy)
+                    val worker = Worker(processorName, tokenStore, concurrentPerSegment, it, tokenClaimInterval, workerContext, token, strategy, propagatingErrorHandler)
                     worker.start()
                     activeSegments[it] = worker
                     logger.info("Added new segment: [{}].", it.segmentId)
