@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2010-2022. Axon Framework
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.axonframework.extensions.kotlin_coroutine
 
 import kotlinx.coroutines.*
@@ -16,6 +32,7 @@ import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
 private val logger = KotlinLogging.logger {}
+
 class CoroutineEventProcessor(
     private val processorName: String,
     private val messageSource: StreamableMessageSource<TrackedEventMessage<Any>>,
@@ -29,7 +46,8 @@ class CoroutineEventProcessor(
     private val initialTrackingTokenBuilder: Function1<StreamableMessageSource<TrackedEventMessage<Any>>, TrackingToken?> =
         StreamableMessageSource<TrackedEventMessage<Any>>::createTailToken,
     private val strategy: Worker.Strategy = Worker.Strategy.AtLeastOnce,
-    private val sequencingPolicy: SequencingPolicy<in TrackedEventMessage<Any>> = SequentialPerAggregatePolicy.instance()
+    private val sequencingPolicy: SequencingPolicy<in TrackedEventMessage<Any>> = SequentialPerAggregatePolicy.instance(),
+    private val exceptionHandler: ProcessingErrorHandler = propagatingErrorHandler
 ) {
     private val state: AtomicReference<State> = AtomicReference(State.NOT_STARTED)
     private val tasks: MutableList<ProcessorTask> = mutableListOf()
@@ -40,12 +58,13 @@ class CoroutineEventProcessor(
     }
 
     suspend fun start() {
-        if (tokenStore.fetchSegments(processorName).isEmpty()) {
-            val initialToken: TrackingToken = initialTrackingTokenBuilder.invoke(messageSource) ?: FirstToken
-            tokenStore.initializeTokenSegments(processorName, segmentsSize, initialToken)
-        }
         if (state.compareAndSet(State.NOT_STARTED, State.STARTED)) {
-            logger.info("Creating and starting coordinator.")
+            if (tokenStore.fetchSegments(processorName).isEmpty()) {
+                logger.info { "Initializing token store for processor with name: $processorName." }
+                val initialToken: TrackingToken = initialTrackingTokenBuilder.invoke(messageSource) ?: FirstToken
+                tokenStore.initializeTokenSegments(processorName, segmentsSize, initialToken)
+            }
+            logger.info { "Creating and starting coordinator." }
             val coordinator = Coordinator(
                 processorName,
                 messageSource,
@@ -57,17 +76,20 @@ class CoroutineEventProcessor(
                 workerContext,
                 state,
                 strategy,
-                sequencingPolicy
+                sequencingPolicy,
+                exceptionHandler
             )
             coordinateJob.set(CoroutineScope(coordinatorContext).async { coordinator.coordinate() })
+        } else {
+            logger.info("Not starting because current state is: $state.")
         }
     }
 
     suspend fun stop() {
+        logger.info { "Stopping coordinator" }
         state.set(State.SHUT_DOWN)
-        logger.info("Stopping coordinator")
         coordinateJob.getAndSet(null)?.cancelAndJoin()
-        logger.info("Coordinator stopped")
+        logger.info { "Coordinator stopped" }
     }
 
     /**

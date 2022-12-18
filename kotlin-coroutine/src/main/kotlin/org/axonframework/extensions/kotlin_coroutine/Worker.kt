@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2010-2022. Axon Framework
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.axonframework.extensions.kotlin_coroutine
 
 import kotlinx.coroutines.*
@@ -36,24 +52,25 @@ class Worker(
     private val processingQueue: Queue<ProcessingPackage> = ConcurrentLinkedQueue()
     private var processingPackage: ProcessingPackage? = null
     private val activePackages = AtomicInteger(0)
-    private val bufferSize = 1024
+    private val maxBufferSize = 1024
     private val jobList = mutableListOf<Job>()
 
     fun take(processorTask: ProcessorTask, event: TrackedEventMessage<Any>, nextHasSameToken: Boolean) {
         if (!active.get()) {
-            logger.debug("Not taking message with id [{}] because not active.", event.identifier)
+            logger.debug { "Not taking message with id [${event.identifier}] because not active." }
             return
         }
         if (highestToken.covers(event.trackingToken())) {
-            logger.debug("Not taking message with id [{}] because token indicates it's already processed.", event.identifier)
+            logger.debug { "Not taking message with id [${event.identifier}] because token indicates it's already processed." }
             return
         }
+        logger.debug { "Taking taking message with id [${event.identifier}]." }
         val entry = ProcessingEntry(processorTask, event)
         processingPackage = processingPackage?.let {
             ProcessingPackage(it.entries + listOf(entry))
         } ?: ProcessingPackage(listOf(entry))
         if (!nextHasSameToken) {
-            logger.debug("Adding package with {} messages to queue.", processingPackage!!.entries.size)
+            logger.debug { "Adding package with ${processingPackage!!.entries.size} messages to queue." }
             processingQueue.add(processingPackage)
             processingPackage = null
         }
@@ -64,7 +81,7 @@ class Worker(
     }
 
     fun isFull(): Boolean {
-        return processingQueue.size > bufferSize
+        return processingQueue.size > maxBufferSize
     }
 
     private suspend fun processingStarting(token: TrackingToken) {
@@ -75,6 +92,7 @@ class Worker(
                 currentToken = highestToken
                 store()
             }
+
             Strategy.AtLeastOnce -> {
                 //nothing needs to happen
             }
@@ -92,6 +110,7 @@ class Worker(
             Strategy.AtMostOnce -> {
                 //nothing needs to happen
             }
+
             Strategy.AtLeastOnce -> {
                 currentToken = lowestToken
             }
@@ -164,8 +183,10 @@ class Worker(
     }
 
     suspend fun stop() {
+        logger.info { "Stopping worker for segment: [${segment.segmentId}]" }
         active.set(false)
         jobList.forEach { it.cancelAndJoin() }
+        logger.info { "Stopped worker for segment: [${segment.segmentId}]" }
     }
 
     enum class Strategy {
