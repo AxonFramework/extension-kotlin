@@ -47,7 +47,10 @@ class CoroutineEventProcessor(
         StreamableMessageSource<TrackedEventMessage<Any>>::createTailToken,
     private val strategy: Worker.Strategy = Worker.Strategy.AtLeastOnce,
     private val sequencingPolicy: SequencingPolicy<in TrackedEventMessage<Any>> = SequentialPerAggregatePolicy.instance(),
-    private val exceptionHandler: ProcessingErrorHandler = propagatingErrorHandler
+    private val exceptionHandler: ProcessingErrorHandler = propagatingErrorHandler,
+    private val coordinatorBatchSize: Int = 1024,
+    private val workerBufferSize: Int = 1024,
+    private val delayWhenBufferFull: Duration = 5.toDuration(DurationUnit.SECONDS),
 ) {
     private val state: AtomicReference<State> = AtomicReference(State.NOT_STARTED)
     private val tasks: MutableList<ProcessorTask> = mutableListOf()
@@ -66,18 +69,21 @@ class CoroutineEventProcessor(
             }
             logger.info { "Creating and starting coordinator." }
             val coordinator = Coordinator(
-                processorName,
-                messageSource,
-                tasks.toList(),
-                tokenStore,
-                concurrentPerSegment,
-                delayWhenStreamEmpty,
-                tokenClaimInterval,
-                workerContext,
-                state,
-                strategy,
-                sequencingPolicy,
-                exceptionHandler
+                processorName = processorName,
+                messageSource = messageSource,
+                tasks = tasks.toList(),
+                tokenStore = tokenStore,
+                concurrentPerSegment = concurrentPerSegment,
+                delayWhenStreamEmpty = delayWhenStreamEmpty,
+                tokenClaimInterval = tokenClaimInterval,
+                workerContext = workerContext,
+                state = state,
+                strategy = strategy,
+                sequencingPolicy = sequencingPolicy,
+                exceptionHandler = exceptionHandler,
+                batchSize = coordinatorBatchSize,
+                workerBufferSize = workerBufferSize,
+                delayWhenBufferFull = delayWhenBufferFull,
             )
             coordinateJob.set(CoroutineScope(coordinatorContext).async { coordinator.coordinate() })
         } else {

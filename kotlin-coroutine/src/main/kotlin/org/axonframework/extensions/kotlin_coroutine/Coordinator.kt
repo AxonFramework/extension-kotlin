@@ -49,22 +49,24 @@ class Coordinator(
     private val state: AtomicReference<CoroutineEventProcessor.State>,
     private val strategy: Worker.Strategy,
     private val sequencingPolicy: SequencingPolicy<in TrackedEventMessage<Any>>,
-    private val exceptionHandler: ProcessingErrorHandler
+    private val exceptionHandler: ProcessingErrorHandler,
+    private val batchSize: Int,
+    private val workerBufferSize: Int,
+    private val delayWhenBufferFull: Duration,
 ) {
     private val activeSegments: MutableMap<Segment, Worker> = ConcurrentHashMap()
     private var eventStream: BlockingStream<TrackedEventMessage<Any>>? = null
     private var lastScheduledToken: TrackingToken = NoToken
     private var lastCheckedUnclaimedSegments = Instant.ofEpochMilli(0L)
     private var lastWorker: Worker? = null
-    private val bufferSize = 1024
 
     suspend fun coordinate() {
         while (state.get().isRunning) {
-            if (lastCheckedUnclaimedSegments.isBefore(Instant.now().plusSeconds(tokenClaimInterval.inWholeSeconds))) {
+            if (lastCheckedUnclaimedSegments.isBefore(Instant.now().minusSeconds(tokenClaimInterval.inWholeSeconds))) {
                 logger.debug { "Updating active segments." }
-                checkUnclaimedSegments()
                 cleanInactive()
-                logger.debug { "Active segments: [${activeSegments.values.count()}]." }
+                checkUnclaimedSegments()
+                logger.debug { "Active segments: ${activeSegments.keys.map { it.segmentId }.sorted()}." }
             }
             if (activeSegments.isEmpty()) {
                 logger.debug { "No active segments, so start delay." }
@@ -72,28 +74,38 @@ class Coordinator(
             } else if (eventStream?.hasNextAvailable() != true) {
                 logger.debug { "No new events, so start delay." }
                 delay(delayWhenStreamEmpty)
-            } else if (activeSegments.values.map { it.isFull() }.any { it }) {
-                logger.debug { "One of the workers is full, so start delay." }
-                delay(delayWhenStreamEmpty)
             } else {
                 logger.debug { "Coordinating the next batch of events." }
                 eventStream?.let {
-                    var fetched = 0
-                    var nextHasSameToken = false
-                    while (nextHasSameToken || (fetched < bufferSize && it.hasNextAvailable())) {
-                        val event: TrackedEventMessage<Any> = it.nextAvailable()
-                        logger.info { "Coordinate event with id: [${event.identifier}]." }
-                        fetched++
-                        lastScheduledToken = event.trackingToken()
-                        nextHasSameToken = it.peek()
-                            .filter { e: TrackedEventMessage<Any> -> lastScheduledToken == e.trackingToken() }
-                            .isPresent
-                        scheduleEvent(event, nextHasSameToken)
-                    }
+                    processStream(it)
                 }
             }
         }
         activeSegments.values.forEach { it.stop() }
+    }
+
+    private suspend fun processStream(stream: BlockingStream<TrackedEventMessage<Any>>) {
+        var fetched = 0
+        var nextHasSameToken = false
+        while (nextHasSameToken || (fetched < batchSize && stream.hasNextAvailable())) {
+            val event: TrackedEventMessage<Any> = stream.nextAvailable()
+            logger.debug { "Coordinate event with id: [${event.identifier}]." }
+            fetched++
+            nextHasSameToken = stream.peek()
+                .filter { e: TrackedEventMessage<Any> -> lastScheduledToken == e.trackingToken() }
+                .isPresent
+            try {
+                scheduleEvent(event, nextHasSameToken)
+            } catch (e: ProcessingChannelFullOrClosedException) {
+                logger.warn("Failed to schedule event.", e)
+                eventStream = messageSource.openStream(lastScheduledToken)
+                delay(delayWhenBufferFull)
+                return
+            }
+            if (!nextHasSameToken) {
+                lastScheduledToken = event.trackingToken()
+            }
+        }
     }
 
     private fun scheduleEvent(event: TrackedEventMessage<Any>, nextHasSameToken: Boolean) {
@@ -113,10 +125,10 @@ class Coordinator(
                     }
                     return
                 }
-                return
             }
         }
     }
+
 
     private fun checkUnclaimedSegments() {
         val newToken = updateActiveSegments()
@@ -135,16 +147,17 @@ class Coordinator(
     }
 
     private fun cleanInactive() {
-        logger.info("Removing inactive segments.")
+        logger.debug { "Removing inactive segments." }
         activeSegments.iterator().forEach {
             if (!it.value.isActive()) {
                 activeSegments.remove(it.key)
-                logger.info("Removed as active segment: [${it.key.segmentId}].")
+                logger.info { "Removed as active segment: [${it.key.segmentId}]." }
             }
         }
     }
 
     private fun updateActiveSegments(): TrackingToken? {
+        logger.debug { "Updating active segments, possibly adding unclaimed ones." }
         var result: TrackingToken? = null
         tokenStore.fetchAvailableSegments(processorName)
             .filter { !activeSegments.containsKey(it) }
@@ -152,7 +165,18 @@ class Coordinator(
                 try {
                     val token = tokenStore.fetchToken(processorName, it) ?: FirstToken
                     result = result?.lowerBound(token) ?: token
-                    val worker = Worker(processorName, tokenStore, concurrentPerSegment, it, tokenClaimInterval, workerContext, token, strategy, exceptionHandler)
+                    val worker = Worker(
+                        processorName = processorName,
+                        tokenStore = tokenStore,
+                        concurrent = concurrentPerSegment,
+                        segment = it,
+                        tokenClaimInterval = tokenClaimInterval,
+                        workerContext = workerContext,
+                        currentToken = token,
+                        strategy = strategy,
+                        exceptionHandler = exceptionHandler,
+                        bufferSize = workerBufferSize,
+                    )
                     worker.start()
                     activeSegments[it] = worker
                     logger.info { "Added new segment: [${it.segmentId}]." }

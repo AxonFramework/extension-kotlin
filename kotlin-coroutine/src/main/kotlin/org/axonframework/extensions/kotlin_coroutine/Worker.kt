@@ -17,7 +17,9 @@
 package org.axonframework.extensions.kotlin_coroutine
 
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import mu.KotlinLogging
+import org.axonframework.common.AxonException
 import org.axonframework.eventhandling.Segment
 import org.axonframework.eventhandling.TrackedEventMessage
 import org.axonframework.eventhandling.TrackingToken
@@ -43,16 +45,16 @@ class Worker(
     private val workerContext: CoroutineContext,
     private var currentToken: TrackingToken,
     private val strategy: Strategy,
-    private val exceptionHandler: ProcessingErrorHandler
+    private val exceptionHandler: ProcessingErrorHandler,
+    bufferSize: Int,
 ) {
     private val active = AtomicBoolean(false)
     private var lowestToken = currentToken
     private var highestToken = currentToken
     private val activeTokens: Queue<TrackingToken> = ConcurrentLinkedQueue()
-    private val processingQueue: Queue<ProcessingPackage> = ConcurrentLinkedQueue()
+    private val packageChannel = Channel<ProcessingPackage>(bufferSize)
     private var processingPackage: ProcessingPackage? = null
     private val activePackages = AtomicInteger(0)
-    private val maxBufferSize = 1024
     private val jobList = mutableListOf<Job>()
 
     fun take(processorTask: ProcessorTask, event: TrackedEventMessage<Any>, nextHasSameToken: Boolean) {
@@ -70,18 +72,22 @@ class Worker(
             ProcessingPackage(it.entries + listOf(entry))
         } ?: ProcessingPackage(listOf(entry))
         if (!nextHasSameToken) {
-            logger.debug { "Adding package with ${processingPackage!!.entries.size} messages to queue." }
-            processingQueue.add(processingPackage)
-            processingPackage = null
+            processingPackage = processingPackage?.let {
+                logger.debug { "Adding package with ids ${it.entries.map { pp -> pp.message.identifier }} to channel." }
+                packageChannel.trySend(it).let { result ->
+                    if (!result.isSuccess) {
+                        throw ProcessingChannelFullOrClosedException(
+                            "Result was: $result, for adding message with id: [${event.identifier}], belonging to segment: ${segment.segmentId}."
+                        )
+                    }
+                }
+                null
+            }
         }
     }
 
     fun isActive(): Boolean {
         return active.get()
-    }
-
-    fun isFull(): Boolean {
-        return processingQueue.size > maxBufferSize
     }
 
     private suspend fun processingStarting(token: TrackingToken) {
@@ -137,10 +143,10 @@ class Worker(
 
     private suspend fun processLoop() {
         while (active.get()) {
-            if (activePackages.get() < concurrent && !processingQueue.isEmpty()) {
-                logger.debug("Start processing package")
+            if (activePackages.get() < concurrent) {
+                logger.debug("Start processing package when available")
                 activePackages.incrementAndGet()
-                processPackage(processingQueue.poll())
+                processPackage(packageChannel.receive())
             } else {
                 delay(50.toDuration(DurationUnit.MILLISECONDS))
             }
@@ -185,6 +191,7 @@ class Worker(
     suspend fun stop() {
         logger.info { "Stopping worker for segment: [${segment.segmentId}]" }
         active.set(false)
+        packageChannel.cancel(CancellationException("Worker was stopped."))
         jobList.forEach { it.cancelAndJoin() }
         logger.info { "Stopped worker for segment: [${segment.segmentId}]" }
     }
@@ -194,6 +201,8 @@ class Worker(
         AtLeastOnce
     }
 }
+
+class ProcessingChannelFullOrClosedException(override val message: String) : AxonException(message)
 
 interface ProcessingErrorHandler {
     suspend fun onError(exception: Exception, message: TrackedEventMessage<Any>, task: suspend (TrackedEventMessage<Any>) -> Unit)
