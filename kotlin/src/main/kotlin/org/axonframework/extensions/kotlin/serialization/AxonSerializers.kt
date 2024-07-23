@@ -204,23 +204,28 @@ object ReplayTokenSerializer : KSerializer<ReplayToken> {
     override val descriptor = buildClassSerialDescriptor(ReplayToken::class.java.name) {
         element<TrackingToken>("tokenAtReset")
         element<TrackingToken>("currentToken")
+        element<TrackingToken>("context")
     }
 
     override fun deserialize(decoder: Decoder) = decoder.decodeStructure(descriptor) {
         var tokenAtReset: TrackingToken? = null
         var currentToken: TrackingToken? = null
+        var context: Any? = null
         while (true) {
             val index = decodeElementIndex(descriptor)
             if (index == CompositeDecoder.DECODE_DONE) break
             when (index) {
                 0 -> tokenAtReset = decodeSerializableElement(descriptor, index, trackingTokenSerializer)
                 1 -> currentToken = decodeSerializableElement(descriptor, index, trackingTokenSerializer)
+                /* replace null for a working serializer that knows how to check the primitives and potentially provided serializers */
+                2 -> context = decodeSerializableElement(descriptor, index, null)
             }
         }
-        ReplayToken(
+        ReplayToken.createReplayToken(
             tokenAtReset ?: throw SerializationException("Element 'tokenAtReset' is missing"),
             currentToken,
-        )
+            context
+        ) as ReplayToken
     }
 
     override fun serialize(encoder: Encoder, value: ReplayToken) = encoder.encodeStructure(descriptor) {

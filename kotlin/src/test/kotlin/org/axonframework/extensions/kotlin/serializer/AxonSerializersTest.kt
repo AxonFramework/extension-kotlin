@@ -77,8 +77,10 @@ internal class AxonSerializersTest {
 
     @Test
     fun replayToken() {
-        val token = ReplayToken.createReplayToken(GlobalSequenceTrackingToken(15), GlobalSequenceTrackingToken(10))
-        val json = """{"tokenAtReset":{"type":"org.axonframework.eventhandling.GlobalSequenceTrackingToken","globalIndex":15},"currentToken":{"type":"org.axonframework.eventhandling.GlobalSequenceTrackingToken","globalIndex":10}}"""
+        val token = ReplayToken.createReplayToken(
+            GlobalSequenceTrackingToken(15), GlobalSequenceTrackingToken(10), "someContext"
+        )
+        val json = """{"tokenAtReset":{"type":"org.axonframework.eventhandling.GlobalSequenceTrackingToken","globalIndex":15},"currentToken":{"type":"org.axonframework.eventhandling.GlobalSequenceTrackingToken","globalIndex":10},"context":"someContext"}""".trimIndent()
         assertEquals(json, serializer.serialize(token, String::class.java).data)
         assertEquals(token, serializer.deserializeTrackingToken(token.javaClass.name, json))
     }
