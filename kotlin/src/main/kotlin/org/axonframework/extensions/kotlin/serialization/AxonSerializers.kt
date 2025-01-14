@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2010-2024. Axon Framework
+ * Copyright (c) 2010-2025. Axon Framework
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,8 +49,14 @@ import org.axonframework.messaging.responsetypes.OptionalResponseType
 import org.axonframework.messaging.responsetypes.ResponseType
 import kotlin.reflect.KClass
 
-private val trackingTokenSerializer = PolymorphicSerializer(TrackingToken::class).nullable
+/**
+ * TODO - documentation
+ */
+val trackingTokenSerializer = PolymorphicSerializer(TrackingToken::class).nullable
 
+/**
+ * TODO - documentation
+ */
 val AxonSerializersModule = SerializersModule {
     contextual(ConfigToken::class) { ConfigTokenSerializer }
     contextual(GapAwareTrackingToken::class) { GapAwareTrackingTokenSerializer }
@@ -86,6 +92,9 @@ val AxonSerializersModule = SerializersModule {
     }
 }
 
+/**
+ * TODO - documentation
+ */
 object ConfigTokenSerializer : KSerializer<ConfigToken> {
 
     private val mapSerializer = MapSerializer(String.serializer(), String.serializer())
@@ -112,6 +121,9 @@ object ConfigTokenSerializer : KSerializer<ConfigToken> {
     }
 }
 
+/**
+ * TODO - documentation
+ */
 object GapAwareTrackingTokenSerializer : KSerializer<GapAwareTrackingToken> {
 
     private val setSerializer = SetSerializer(Long.serializer())
@@ -143,6 +155,9 @@ object GapAwareTrackingTokenSerializer : KSerializer<GapAwareTrackingToken> {
     }
 }
 
+/**
+ * TODO - documentation
+ */
 object MultiSourceTrackingTokenSerializer : KSerializer<MultiSourceTrackingToken> {
 
     private val mapSerializer = MapSerializer(String.serializer(), trackingTokenSerializer)
@@ -169,6 +184,9 @@ object MultiSourceTrackingTokenSerializer : KSerializer<MultiSourceTrackingToken
     }
 }
 
+/**
+ * TODO - documentation
+ */
 object MergedTrackingTokenSerializer : KSerializer<MergedTrackingToken> {
 
     override val descriptor = buildClassSerialDescriptor(MergedTrackingToken::class.java.name) {
@@ -199,6 +217,9 @@ object MergedTrackingTokenSerializer : KSerializer<MergedTrackingToken> {
     }
 }
 
+/**
+ * TODO - documentation
+ */
 object ReplayTokenSerializer : KSerializer<ReplayToken> {
 
     override val descriptor = buildClassSerialDescriptor(ReplayToken::class.java.name) {
@@ -210,6 +231,7 @@ object ReplayTokenSerializer : KSerializer<ReplayToken> {
     override fun deserialize(decoder: Decoder) = decoder.decodeStructure(descriptor) {
         var tokenAtReset: TrackingToken? = null
         var currentToken: TrackingToken? = null
+        // TODO Fixate context to a String for ease. And, add documentation about this
         var context: Any? = null
         while (true) {
             val index = decodeElementIndex(descriptor)
@@ -234,6 +256,9 @@ object ReplayTokenSerializer : KSerializer<ReplayToken> {
     }
 }
 
+/**
+ * TODO - documentation
+ */
 object GlobalSequenceTrackingTokenSerializer : KSerializer<GlobalSequenceTrackingToken> {
 
     override val descriptor = buildClassSerialDescriptor(GlobalSequenceTrackingToken::class.java.name) {
@@ -259,6 +284,9 @@ object GlobalSequenceTrackingTokenSerializer : KSerializer<GlobalSequenceTrackin
     }
 }
 
+/**
+ * TODO - documentation
+ */
 object SimpleScheduleTokenSerializer : KSerializer<SimpleScheduleToken> {
 
     override val descriptor = buildClassSerialDescriptor(SimpleScheduleToken::class.java.name) {
@@ -284,6 +312,9 @@ object SimpleScheduleTokenSerializer : KSerializer<SimpleScheduleToken> {
     }
 }
 
+/**
+ * TODO - documentation
+ */
 object QuartzScheduleTokenSerializer : KSerializer<QuartzScheduleToken> {
 
     override val descriptor = buildClassSerialDescriptor(QuartzScheduleToken::class.java.name) {
@@ -339,14 +370,26 @@ abstract class ResponseTypeSerializer<R : ResponseType<*>>(kClass: KClass<R>, pr
     }
 }
 
+/**
+ * TODO - documentation
+ */
 object InstanceResponseTypeSerializer : KSerializer<InstanceResponseType<*>>,
     ResponseTypeSerializer<InstanceResponseType<*>>(InstanceResponseType::class, { InstanceResponseType(it) })
 
+/**
+ * TODO - documentation
+ */
 object OptionalResponseTypeSerializer : KSerializer<OptionalResponseType<*>>,
     ResponseTypeSerializer<OptionalResponseType<*>>(OptionalResponseType::class, { OptionalResponseType(it) })
 
+/**
+ * TODO - documentation
+ */
 object MultipleInstancesResponseTypeSerializer : KSerializer<MultipleInstancesResponseType<*>>,
     ResponseTypeSerializer<MultipleInstancesResponseType<*>>(MultipleInstancesResponseType::class, { MultipleInstancesResponseType(it) })
 
+/**
+ * TODO - documentation
+ */
 object ArrayResponseTypeSerializer : KSerializer<ArrayResponseType<*>>,
     ResponseTypeSerializer<ArrayResponseType<*>>(ArrayResponseType::class, { ArrayResponseType(it) })
