@@ -50,13 +50,32 @@ import org.axonframework.messaging.responsetypes.ResponseType
 import kotlin.reflect.KClass
 
 /**
- * TODO - documentation
+ * Serializer for Axon's [TrackingToken] class.
+ * Provides serialization and deserialization support for nullable instances of TrackingToken.
+ * This serializer uses [replyTokenContextSerializer] to serialize the context field and now only [String] type or null value is supported!
+ *
+ * @see TrackingToken
  */
 val trackingTokenSerializer = PolymorphicSerializer(TrackingToken::class).nullable
+
+/**
+ * Serializer for the [ReplayToken.context], represented as a nullable String.
+ * This context is typically used to provide additional information during token replay operations.
+ *
+ * This serializer is used by [trackingTokenSerializer] to serialize the context field and now only [String] type or null value is supported!
+ * Sadly enough, there's no straightforward solution to support [Any]; not without adjusting the context field of the ReplayToken in Axon Framework itself.
+ * That is, however, a breaking change, and as such, cannot be done till version 5.0.0 of the Axon Framework.
+ * This also allow more complex objects as the context, although it requires the user to do the de-/serialization to/from String, instead of the Axon Framework itself.
+ * Look at AxonSerializersTest, case `replay token with complex object as String context` for an example how to handle that using Kotlin Serialization.
+ *
+ * @see ReplayToken.context
+ */
 val replyTokenContextSerializer = String.serializer().nullable
 
 /**
- * TODO - documentation
+ * Module defining serializers for Axon Framework's core event handling and messaging components.
+ * This module includes serializers for TrackingTokens, ScheduleTokens, and ResponseTypes, enabling
+ * seamless integration with Axon-based applications.
  */
 val AxonSerializersModule = SerializersModule {
     contextual(ConfigToken::class) { ConfigTokenSerializer }
@@ -94,7 +113,9 @@ val AxonSerializersModule = SerializersModule {
 }
 
 /**
- * TODO - documentation
+ * Serializer for [ConfigToken].
+ *
+ * @see ConfigToken
  */
 object ConfigTokenSerializer : KSerializer<ConfigToken> {
 
@@ -123,7 +144,11 @@ object ConfigTokenSerializer : KSerializer<ConfigToken> {
 }
 
 /**
- * TODO - documentation
+ * Serializer for [GapAwareTrackingToken], which represents tracking tokens with an index and associated gap set.
+ *
+ * This implementation supports the serialization and deserialization of tokens that manage tracking gaps.
+ *
+ * @see GapAwareTrackingToken
  */
 object GapAwareTrackingTokenSerializer : KSerializer<GapAwareTrackingToken> {
 
@@ -157,7 +182,12 @@ object GapAwareTrackingTokenSerializer : KSerializer<GapAwareTrackingToken> {
 }
 
 /**
- * TODO - documentation
+ * Serializer for [MultiSourceTrackingToken], which maps source identifiers to corresponding TrackingTokens.
+ *
+ * This allows for managing tracking tokens in multi-source scenarios, enabling serialization and deserialization
+ * of complex token mappings.
+ *
+ * @see MultiSourceTrackingToken
  */
 object MultiSourceTrackingTokenSerializer : KSerializer<MultiSourceTrackingToken> {
 
@@ -186,7 +216,9 @@ object MultiSourceTrackingTokenSerializer : KSerializer<MultiSourceTrackingToken
 }
 
 /**
- * TODO - documentation
+ * Serializer for [MergedTrackingToken], which combines two [TrackingToken] (lower segment and upper segment) into a single token.
+ *
+ * @see MergedTrackingToken
  */
 object MergedTrackingTokenSerializer : KSerializer<MergedTrackingToken> {
 
@@ -219,14 +251,17 @@ object MergedTrackingTokenSerializer : KSerializer<MergedTrackingToken> {
 }
 
 /**
- * TODO - documentation
+ * Serializer for [ReplayToken].
+ * The [ReplayToken.context] value can be only a String or null. See [replyTokenContextSerializer] for more information how to handle the context field.
+ *
+ * @see ReplayToken
  */
 object ReplayTokenSerializer : KSerializer<ReplayToken> {
 
     override val descriptor = buildClassSerialDescriptor(ReplayToken::class.java.name) {
         element<TrackingToken>("tokenAtReset")
         element<TrackingToken>("currentToken")
-        element<TrackingToken>("context")
+        element<String>("context")
     }
 
     override fun deserialize(decoder: Decoder) = decoder.decodeStructure(descriptor) {
@@ -265,7 +300,9 @@ object ReplayTokenSerializer : KSerializer<ReplayToken> {
 }
 
 /**
- * TODO - documentation
+ * Serializer for [GlobalSequenceTrackingToken], which includes a global index.
+ *
+ * @see GlobalSequenceTrackingToken
  */
 object GlobalSequenceTrackingTokenSerializer : KSerializer<GlobalSequenceTrackingToken> {
 
@@ -293,7 +330,9 @@ object GlobalSequenceTrackingTokenSerializer : KSerializer<GlobalSequenceTrackin
 }
 
 /**
- * TODO - documentation
+ * Serializer for [SimpleScheduleToken].
+ *
+ * @see SimpleScheduleToken
  */
 object SimpleScheduleTokenSerializer : KSerializer<SimpleScheduleToken> {
 
@@ -321,7 +360,9 @@ object SimpleScheduleTokenSerializer : KSerializer<SimpleScheduleToken> {
 }
 
 /**
- * TODO - documentation
+ * Serializer for [QuartzScheduleToken].
+ *
+ * @see QuartzScheduleToken
  */
 object QuartzScheduleTokenSerializer : KSerializer<QuartzScheduleToken> {
 
@@ -379,25 +420,33 @@ abstract class ResponseTypeSerializer<R : ResponseType<*>>(kClass: KClass<R>, pr
 }
 
 /**
- * TODO - documentation
+ * Serializer for [InstanceResponseType].
+ *
+ * @see InstanceResponseType
  */
 object InstanceResponseTypeSerializer : KSerializer<InstanceResponseType<*>>,
     ResponseTypeSerializer<InstanceResponseType<*>>(InstanceResponseType::class, { InstanceResponseType(it) })
 
 /**
- * TODO - documentation
+ * Serializer for [OptionalResponseType].
+ *
+ * @see OptionalResponseType
  */
 object OptionalResponseTypeSerializer : KSerializer<OptionalResponseType<*>>,
     ResponseTypeSerializer<OptionalResponseType<*>>(OptionalResponseType::class, { OptionalResponseType(it) })
 
 /**
- * TODO - documentation
+ * Serializer for [MultipleInstancesResponseType].
+ *
+ * @see MultipleInstancesResponseType
  */
 object MultipleInstancesResponseTypeSerializer : KSerializer<MultipleInstancesResponseType<*>>,
     ResponseTypeSerializer<MultipleInstancesResponseType<*>>(MultipleInstancesResponseType::class, { MultipleInstancesResponseType(it) })
 
 /**
- * TODO - documentation
+ * Serializer for [ArrayResponseType].
+ *
+ * @see ArrayResponseType
  */
 object ArrayResponseTypeSerializer : KSerializer<ArrayResponseType<*>>,
     ResponseTypeSerializer<ArrayResponseType<*>>(ArrayResponseType::class, { ArrayResponseType(it) })
