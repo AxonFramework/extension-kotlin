@@ -144,9 +144,7 @@ object ConfigTokenSerializer : KSerializer<ConfigToken> {
 }
 
 /**
- * Serializer for [GapAwareTrackingToken], which represents tracking tokens with an index and associated gap set.
- *
- * This implementation supports the serialization and deserialization of tokens that manage tracking gaps.
+ * Serializer for [GapAwareTrackingToken].
  *
  * @see GapAwareTrackingToken
  */
@@ -182,10 +180,7 @@ object GapAwareTrackingTokenSerializer : KSerializer<GapAwareTrackingToken> {
 }
 
 /**
- * Serializer for [MultiSourceTrackingToken], which maps source identifiers to corresponding TrackingTokens.
- *
- * This allows for managing tracking tokens in multi-source scenarios, enabling serialization and deserialization
- * of complex token mappings.
+ * Serializer for [MultiSourceTrackingToken].
  *
  * @see MultiSourceTrackingToken
  */
@@ -216,7 +211,7 @@ object MultiSourceTrackingTokenSerializer : KSerializer<MultiSourceTrackingToken
 }
 
 /**
- * Serializer for [MergedTrackingToken], which combines two [TrackingToken] (lower segment and upper segment) into a single token.
+ * Serializer for [MergedTrackingToken].
  *
  * @see MergedTrackingToken
  */
@@ -252,7 +247,8 @@ object MergedTrackingTokenSerializer : KSerializer<MergedTrackingToken> {
 
 /**
  * Serializer for [ReplayToken].
- * The [ReplayToken.context] value can be only a String or null. See [replyTokenContextSerializer] for more information how to handle the context field.
+ * The [ReplayToken.context] value can be only a String or null.
+ * See [replyTokenContextSerializer] for more information how to handle the context field.
  *
  * @see ReplayToken
  */
@@ -300,7 +296,7 @@ object ReplayTokenSerializer : KSerializer<ReplayToken> {
 }
 
 /**
- * Serializer for [GlobalSequenceTrackingToken], which includes a global index.
+ * Serializer for [GlobalSequenceTrackingToken].
  *
  * @see GlobalSequenceTrackingToken
  */
