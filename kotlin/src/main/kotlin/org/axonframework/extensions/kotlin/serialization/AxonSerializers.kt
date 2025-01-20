@@ -53,6 +53,7 @@ import kotlin.reflect.KClass
  * TODO - documentation
  */
 val trackingTokenSerializer = PolymorphicSerializer(TrackingToken::class).nullable
+val replyTokenContextSerializer = String.serializer().nullable
 
 /**
  * TODO - documentation
@@ -231,16 +232,14 @@ object ReplayTokenSerializer : KSerializer<ReplayToken> {
     override fun deserialize(decoder: Decoder) = decoder.decodeStructure(descriptor) {
         var tokenAtReset: TrackingToken? = null
         var currentToken: TrackingToken? = null
-        // TODO Fixate context to a String for ease. And, add documentation about this
-        var context: Any? = null
+        var context: String? = null
         while (true) {
             val index = decodeElementIndex(descriptor)
             if (index == CompositeDecoder.DECODE_DONE) break
             when (index) {
                 0 -> tokenAtReset = decodeSerializableElement(descriptor, index, trackingTokenSerializer)
                 1 -> currentToken = decodeSerializableElement(descriptor, index, trackingTokenSerializer)
-                /* replace null for a working serializer that knows how to check the primitives and potentially provided serializers */
-                2 -> context = decodeSerializableElement(descriptor, index, null)
+                2 -> context = decodeSerializableElement(descriptor, index, replyTokenContextSerializer)
             }
         }
         ReplayToken.createReplayToken(
@@ -253,7 +252,16 @@ object ReplayTokenSerializer : KSerializer<ReplayToken> {
     override fun serialize(encoder: Encoder, value: ReplayToken) = encoder.encodeStructure(descriptor) {
         encodeSerializableElement(descriptor, 0, trackingTokenSerializer, value.tokenAtReset)
         encodeSerializableElement(descriptor, 1, trackingTokenSerializer, value.currentToken)
+        encodeSerializableElement(
+            descriptor,
+            2,
+            replyTokenContextSerializer,
+            stringOrNullFrom(value.context())
+        )
     }
+
+    private fun stringOrNullFrom(obj: Any?): String? =
+        obj?.takeIf { it is String }?.let { it as String }
 }
 
 /**

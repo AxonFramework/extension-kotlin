@@ -36,6 +36,7 @@ import org.axonframework.messaging.responsetypes.ResponseType
 import org.axonframework.serialization.Serializer
 import org.axonframework.serialization.SimpleSerializedObject
 import org.axonframework.serialization.SimpleSerializedType
+import org.axonframework.serialization.json.JacksonSerializer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
@@ -76,7 +77,7 @@ internal class AxonSerializersTest {
     }
 
     @Test
-    fun replayToken() {
+    fun `replay token with String context`() {
         val token = ReplayToken.createReplayToken(
             GlobalSequenceTrackingToken(15), GlobalSequenceTrackingToken(10), "someContext"
         )
@@ -86,10 +87,17 @@ internal class AxonSerializersTest {
     }
 
     @Test
-    fun `replay token with currentToken with null value`() {
-        val token = ReplayToken.createReplayToken(GlobalSequenceTrackingToken(5), null)
-        val json = """{"tokenAtReset":{"type":"org.axonframework.eventhandling.GlobalSequenceTrackingToken","globalIndex":5},"currentToken":null}"""
+    fun `replay token with currentToken with null value and null context`() {
+        val token = ReplayToken.createReplayToken(GlobalSequenceTrackingToken(5), null, null)
+        val json = """{"tokenAtReset":{"type":"org.axonframework.eventhandling.GlobalSequenceTrackingToken","globalIndex":5},"currentToken":null,"context":null}"""
         assertEquals(json, serializer.serialize(token, String::class.java).data)
+        assertEquals(token, serializer.deserializeTrackingToken(token.javaClass.name, json))
+    }
+
+    @Test
+    fun `replay token deserialize without context field`() {
+        val token = ReplayToken.createReplayToken(GlobalSequenceTrackingToken(5), null, null)
+        val json = """{"tokenAtReset":{"type":"org.axonframework.eventhandling.GlobalSequenceTrackingToken","globalIndex":5},"currentToken":null}"""
         assertEquals(token, serializer.deserializeTrackingToken(token.javaClass.name, json))
     }
 
