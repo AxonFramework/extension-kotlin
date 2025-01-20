@@ -1,4 +1,0 @@
-* xref:ROOT:index.adoc[]
-** xref:ROOT:commands.adoc[]
-** xref:ROOT:events.adoc[]
-** xref:ROOT:queries.adoc[]
