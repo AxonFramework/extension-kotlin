@@ -52,7 +52,7 @@ import kotlin.reflect.KClass
 /**
  * Serializer for Axon's [TrackingToken] class.
  * Provides serialization and deserialization support for nullable instances of TrackingToken.
- * This serializer uses [replyTokenContextSerializer] to serialize the context field and now only [String] type or null value is supported!
+ * This serializer uses [replayTokenContextSerializer] to serialize the context field and now only [String] type or null value is supported!
  *
  * @see TrackingToken
  */
@@ -70,7 +70,7 @@ val trackingTokenSerializer = PolymorphicSerializer(TrackingToken::class).nullab
  *
  * @see ReplayToken.context
  */
-val replyTokenContextSerializer = String.serializer().nullable
+val replayTokenContextSerializer = String.serializer().nullable
 
 /**
  * Module defining serializers for Axon Framework's core event handling and messaging components.
@@ -248,7 +248,7 @@ object MergedTrackingTokenSerializer : KSerializer<MergedTrackingToken> {
 /**
  * Serializer for [ReplayToken].
  * The [ReplayToken.context] value can be only a String or null.
- * See [replyTokenContextSerializer] for more information how to handle the context field.
+ * See [replayTokenContextSerializer] for more information how to handle the context field.
  *
  * @see ReplayToken
  */
@@ -270,7 +270,7 @@ object ReplayTokenSerializer : KSerializer<ReplayToken> {
             when (index) {
                 0 -> tokenAtReset = decodeSerializableElement(descriptor, index, trackingTokenSerializer)
                 1 -> currentToken = decodeSerializableElement(descriptor, index, trackingTokenSerializer)
-                2 -> context = decodeSerializableElement(descriptor, index, replyTokenContextSerializer)
+                2 -> context = decodeSerializableElement(descriptor, index, replayTokenContextSerializer)
             }
         }
         ReplayToken.createReplayToken(
@@ -286,7 +286,7 @@ object ReplayTokenSerializer : KSerializer<ReplayToken> {
         encodeSerializableElement(
             descriptor,
             2,
-            replyTokenContextSerializer,
+            replayTokenContextSerializer,
             stringOrNullFrom(value.context())
         )
     }
