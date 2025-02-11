@@ -52,7 +52,6 @@ import kotlin.reflect.KClass
 /**
  * Serializer for Axon's [TrackingToken] class.
  * Provides serialization and deserialization support for nullable instances of TrackingToken.
- * This serializer uses [replayTokenContextSerializer] to serialize the context field and now only [String] type or null value is supported!
  *
  * @see TrackingToken
  */
@@ -248,9 +247,10 @@ object MergedTrackingTokenSerializer : KSerializer<MergedTrackingToken> {
 /**
  * Serializer for [ReplayToken].
  * The [ReplayToken.context] value can be only a String or null.
- * See [replayTokenContextSerializer] for more information how to handle the context field.
+ * This serializer uses [replayTokenContextSerializer] to serialize the context field and now only [String] type or null value is supported!
  *
  * @see ReplayToken
+ * @see [replayTokenContextSerializer]
  */
 object ReplayTokenSerializer : KSerializer<ReplayToken> {
 
