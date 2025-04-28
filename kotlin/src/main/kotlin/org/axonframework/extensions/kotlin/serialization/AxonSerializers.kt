@@ -30,6 +30,7 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.encoding.encodeStructure
 import kotlinx.serialization.modules.SerializersModule
+import kotlinx.serialization.modules.SerializersModuleBuilder
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
 import org.axonframework.eventhandling.GapAwareTrackingToken
@@ -43,6 +44,7 @@ import org.axonframework.eventhandling.scheduling.java.SimpleScheduleToken
 import org.axonframework.eventhandling.scheduling.quartz.QuartzScheduleToken
 import org.axonframework.eventhandling.tokenstore.ConfigToken
 import org.axonframework.extensions.kotlin.messaging.responsetypes.ArrayResponseType
+import org.axonframework.messaging.MetaData
 import org.axonframework.messaging.responsetypes.InstanceResponseType
 import org.axonframework.messaging.responsetypes.MultipleInstancesResponseType
 import org.axonframework.messaging.responsetypes.OptionalResponseType
@@ -108,6 +110,33 @@ val AxonSerializersModule = SerializersModule {
         subclass(OptionalResponseTypeSerializer)
         subclass(MultipleInstancesResponseTypeSerializer)
         subclass(ArrayResponseTypeSerializer)
+    }
+
+    contextual(MetaData::class) { MetaDataSerializer }
+    polymorphic(Any::class) {
+        subclass(Int::class)
+        subclass(Long::class)
+        subclass(Float::class)
+        subclass(Double::class)
+        subclass(Boolean::class)
+        subclass(String::class)
+        subclass(List::class)
+        subclass(Set::class)
+        subclass(Map::class)
+    }
+}
+
+/**
+ * Creates a new SerializersModule that combines the standard AxonSerializersModule with additional
+ * serializers for custom types that might be stored in MetaData.
+ *
+ * @param additionalConfiguration Configuration block to register additional serializers.
+ * @return A combined SerializersModule with both Axon serializers and custom serializers.
+ */
+fun axonSerializersModuleWith(additionalConfiguration: SerializersModuleBuilder.() -> Unit): SerializersModule {
+    return SerializersModule {
+        include(AxonSerializersModule)
+        additionalConfiguration()
     }
 }
 
@@ -446,3 +475,37 @@ object MultipleInstancesResponseTypeSerializer : KSerializer<MultipleInstancesRe
  */
 object ArrayResponseTypeSerializer : KSerializer<ArrayResponseType<*>>,
     ResponseTypeSerializer<ArrayResponseType<*>>(ArrayResponseType::class, { ArrayResponseType(it) })
+
+/**
+ * Custom serializer for Axon Framework's [MetaData] class.
+ * Supports primitive types, collections, maps, and custom serializable objects.
+ */
+object MetaDataSerializer : KSerializer<MetaData> {
+    // Use a map serializer for the underlying representation
+    private val mapSerializer = MapSerializer(String.serializer(), PolymorphicSerializer(Any::class).nullable)
+
+    override val descriptor = buildClassSerialDescriptor(MetaData::class.java.name) {
+        element<Map<String, Any?>>("values")
+    }
+
+    override fun serialize(encoder: Encoder, value: MetaData) {
+        encoder.encodeStructure(descriptor) {
+            // We use the entrySet to access the internal values map of MetaData
+            encodeSerializableElement(descriptor, 0, mapSerializer, value.entries.associate { it.key to it.value })
+        }
+    }
+
+    override fun deserialize(decoder: Decoder): MetaData {
+        return decoder.decodeStructure(descriptor) {
+            var values: Map<String, Any?> = emptyMap()
+            while (true) {
+                val index = decodeElementIndex(descriptor)
+                if (index == CompositeDecoder.DECODE_DONE) break
+                when (index) {
+                    0 -> values = decodeSerializableElement(descriptor, index, mapSerializer)
+                }
+            }
+            MetaData.from(values)
+        }
+    }
+}
