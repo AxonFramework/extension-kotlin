@@ -6,36 +6,68 @@ This section describes the additional functionality attached to Axon's command d
 [[commandgateway]]
 == `CommandGateway`
 
-An inlined method has been introduced on the `CommandGateway` which allows the introduction of a dedicated function to be invoked upon success or failure of handling the command. As such it provides a shorthand instead of using the `CommandCallback` directly yourself.
+Several inlined extension methods have been introduced on the `CommandGateway` to provide idiomatic Kotlin usage.
 
-Here is a sample of how this can be utilized within your own project:
+=== Sending a command (async)
+
+`send<C>` dispatches a command and returns a `CommandResult`, which allows registering callbacks for success or failure:
 
 [source,kotlin]
 ----
-import org.axonframework.commandhandling.CommandMessage
-import org.axonframework.commandhandling.gateway.CommandGateway
-import org.axonframework.messaging.MetaData
+import org.axonframework.extensions.kotlin.send
+import org.axonframework.messaging.commandhandling.gateway.CommandGateway
 import org.slf4j.LoggerFactory
 
 class CommandDispatcher(private val commandGateway: CommandGateway) {
 
     private val logger = LoggerFactory.getLogger(CommandDispatcher::class.java)
 
-    // Sample usage providing specific logging logic, next to for example the LoggingInterceptor
-    fun issueCardCommand() {
-        commandGateway.send(
-                command = IssueCardCommand(),
-                onSuccess = { message: CommandMessage<out IssueCardCommand>, result: Any, _: MetaData ->
-                    logger.info("Successfully handled [{}], resulting in [{}]", message, result)
-                },
-                onError = { result: Any, exception: Throwable, _: MetaData ->
-                    logger.warn(
-                            "Failed handling the IssueCardCommand, with output [{} and exception [{}]",
-                            result, exception
-                    )
-                }
-        )
+    fun issueCard() {
+        commandGateway.send(IssueCardCommand())
+            .onSuccess<String> { result, _ ->
+                logger.info("Card issued with id [{}]", result)
+            }
+            .onError { exception ->
+                logger.warn("Failed to issue card", exception)
+            }
     }
+}
+
+class IssueCardCommand
+----
+
+=== Sending a command and waiting for a typed result
+
+`sendAndWait<C, R>` blocks the calling thread until the result is available and returns it typed as `R`:
+
+[source,kotlin]
+----
+import org.axonframework.extensions.kotlin.sendAndWait
+import org.axonframework.messaging.commandhandling.gateway.CommandGateway
+
+class CommandDispatcher(private val commandGateway: CommandGateway) {
+
+    fun issueCard(): String =
+        commandGateway.sendAndWait<IssueCardCommand, String>(IssueCardCommand())
+}
+
+class IssueCardCommand
+----
+
+=== Sending a command and getting a `CompletableFuture`
+
+`sendForResult<C, R>` dispatches a command and returns a `CompletableFuture<R>` for non-blocking composition:
+
+[source,kotlin]
+----
+import org.axonframework.extensions.kotlin.sendForResult
+import org.axonframework.messaging.commandhandling.gateway.CommandGateway
+import java.util.concurrent.CompletableFuture
+
+class CommandDispatcher(private val commandGateway: CommandGateway) {
+
+    fun issueCard(): CompletableFuture<String> =
+        commandGateway.sendForResult<IssueCardCommand, String>(IssueCardCommand())
 }
 
 class IssueCardCommand

@@ -6,71 +6,128 @@ This section describes the additional functionality attached to Axon's query dis
 [[querygateway]]
 == `QueryGateway`
 
-Several inlined methods have been introduced on the `QueryGateway` to use generics instead of explicit `Class` objects and `ResponseType` parameters.
+Several inlined extension methods have been introduced on the `QueryGateway` to use generics instead of explicit `Class` parameters.
+
+=== Single-result query
+
+`query<R, Q>` dispatches a point query and returns a `CompletableFuture<R>`:
 
 [source,kotlin]
 ----
-import org.axonframework.queryhandling.QueryGateway
+import org.axonframework.extensions.kotlin.query
+import org.axonframework.messaging.queryhandling.gateway.QueryGateway
 
 class QueryDispatcher(private val queryGateway: QueryGateway) {
-    fun getTotalNumberOfCards(): Int {
-           val query = CountCardSummariesQuery()
-           // Query will return a CompletableFuture so it has to be handled
-           return queryGateway.query<Int, CountCardSummariesQuery>(query)
-                   .join()
-       }
+
+    fun getTotalNumberOfCards(): Int =
+        queryGateway.query<Int, CountCardSummariesQuery>(CountCardSummariesQuery()).join()
 }
 
 data class CountCardSummariesQuery(val filter: String = "")
 ----
 
-In some cases, Kotlin's type inference system can deduce types without explicit generic parameters. One example of this would be an explicit return parameter:
+Kotlin's type inference can often deduce the types automatically from the return type context:
 
 [source,kotlin]
 ----
-import org.axonframework.queryhandling.QueryGateway
+import org.axonframework.extensions.kotlin.query
+import org.axonframework.messaging.queryhandling.gateway.QueryGateway
 import java.util.concurrent.CompletableFuture
 
 class QueryDispatcher(private val queryGateway: QueryGateway) {
+
     fun getTotalNumberOfCards(): CompletableFuture<Int> =
-            queryGateway.query(CountCardSummariesQuery())
+        queryGateway.query(CountCardSummariesQuery())
 }
 
 data class CountCardSummariesQuery(val filter: String = "")
 ----
 
-There are multiple variants of the `query` method provided, for each type of `ResponseType`:
+=== Multi-result query
 
-- `query`
-- `queryOptional`
-- `queryMany`
+`queryMany<R, Q>` dispatches a query expecting a list of results and returns a `CompletableFuture<List<R>>`:
+
+[source,kotlin]
+----
+import org.axonframework.extensions.kotlin.queryMany
+import org.axonframework.messaging.queryhandling.gateway.QueryGateway
+
+class QueryDispatcher(private val queryGateway: QueryGateway) {
+
+    fun findAllCards(): List<CardSummary> =
+        queryGateway.queryMany<CardSummary, FindAllCardsQuery>(FindAllCardsQuery()).join()
+}
+
+class FindAllCardsQuery
+data class CardSummary(val id: String)
+----
+
+=== Subscription query
+
+`subscriptionQuery<R, Q>` opens a subscription query and returns a `Publisher<R>` of incremental updates:
+
+[source,kotlin]
+----
+import org.axonframework.extensions.kotlin.subscriptionQuery
+import org.axonframework.messaging.queryhandling.gateway.QueryGateway
+import org.reactivestreams.Publisher
+
+class QueryDispatcher(private val queryGateway: QueryGateway) {
+
+    fun subscribeToCardUpdates(): Publisher<CountChangedUpdate> =
+        queryGateway.subscriptionQuery<CountChangedUpdate, CountCardSummariesQuery>(CountCardSummariesQuery())
+}
+
+data class CountCardSummariesQuery(val filter: String = "")
+class CountChangedUpdate
+----
+
+=== Streaming query
+
+`streamingQuery<R, Q>` dispatches a streaming query and returns a `Publisher<R>` of result elements:
+
+[source,kotlin]
+----
+import org.axonframework.extensions.kotlin.streamingQuery
+import org.axonframework.messaging.queryhandling.gateway.QueryGateway
+import org.reactivestreams.Publisher
+
+class QueryDispatcher(private val queryGateway: QueryGateway) {
+
+    fun streamAllCards(): Publisher<CardSummary> =
+        queryGateway.streamingQuery<CardSummary, FindAllCardsQuery>(FindAllCardsQuery())
+}
+
+class FindAllCardsQuery
+data class CardSummary(val id: String)
+----
 
 [[queryupdateemitter]]
 == `QueryUpdateEmitter`
 
-An inline `emit` method has been added to `QueryUpdateEmitter` to simplify emit method's call by using generics and moving the lambda predicate at the end of parameter list. This way the lambda function can be moved outside of the parentheses.
+An inline `emit` extension method has been added to `QueryUpdateEmitter` to simplify calls by using generics and moving the lambda predicate to the end of the parameter list, enabling trailing-lambda syntax.
 
 [source,kotlin]
 ----
-import org.axonframework.queryhandling.QueryUpdateEmitter
+import org.axonframework.extensions.kotlin.emit
+import org.axonframework.messaging.queryhandling.QueryUpdateEmitter
 import org.axonframework.eventhandling.EventHandler
 
-class CardSummaryProjection (private val queryUpdateEmitter : QueryUpdateEmitter) {
+class CardSummaryProjection(private val queryUpdateEmitter: QueryUpdateEmitter) {
+
     @EventHandler
-    fun on(event : CardIssuedEvent) {
+    fun on(event: CardIssuedEvent) {
         // Update projection here
 
         // Then emit the CountChangedUpdate to subscribers of CountCardSummariesQuery
-        // with the given filter
-        queryUpdateEmitter
-                .emit<CountCardSummariesQuery, CountChangedUpdate>(CountChangedUpdate()) { query ->
-                    // Sample filter based on ID field
-                    event.id.startsWith(query.idFilter)
-                }
+        // matching the given filter
+        queryUpdateEmitter.emit<CountCardSummariesQuery, CountChangedUpdate>(CountChangedUpdate()) { query ->
+            event.id.startsWith(query.idFilter)
+        }
     }
 }
 
-class CardIssuedEvent(val id : String)
+class CardIssuedEvent(val id: String)
 class CountChangedUpdate
 data class CountCardSummariesQuery(val idFilter: String = "")
 ----

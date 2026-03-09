@@ -32,14 +32,14 @@ For the Kotlin extension itself you can get the version from the [axon-bom](http
 <dependency>
     <groupId>org.axonframework.extensions.kotlin</groupId>
     <artifactId>axon-kotlin</artifactId>
-    <version>4.6.0</version>
+    <version>5.0.3</version>
 </dependency>
 ```
 
 **Gradle**
 
 ```
-implementation("org.axonframework.extensions.kotlin:axon-kotlin:4.6.0")
+implementation("org.axonframework.extensions.kotlin:axon-kotlin:5.0.3")
 ```
 
 For the Kotlin testing extension itself please use the following coordinates:
@@ -50,14 +50,14 @@ For the Kotlin testing extension itself please use the following coordinates:
 <dependency>
     <groupId>org.axonframework.extensions.kotlin</groupId>
     <artifactId>axon-kotlin-test</artifactId>
-    <version>4.6.0</version>
+    <version>5.0.3</version>
 </dependency>
 ```
 
 **Gradle**
 
 ```
-implementation("org.axonframework.extensions.kotlin:axon-kotlin-test:4.6.0")
+implementation("org.axonframework.extensions.kotlin:axon-kotlin-test:5.0.3")
 ```
 
 
@@ -103,7 +103,7 @@ If you want to build the extension locally, you need to check it out from GiHub 
 
 Please execute the following command line if you are interested in producing KDoc and Source archives:
 
-    ./mvnw clean install -Pjavadoc-and-sources
+    ./mvnw clean install -Pdocs-and-sources
 
 
 ---

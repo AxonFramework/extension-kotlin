@@ -19,12 +19,12 @@ package org.axonframework.extensions.kotlin
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
-import org.axonframework.queryhandling.QueryUpdateEmitter
+import org.axonframework.messaging.queryhandling.QueryUpdateEmitter
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 /**
- * Tests [org.axonframework.queryhandling.QueryUpdateEmitter] extensions.
+ * Tests [org.axonframework.messaging.queryhandling.QueryUpdateEmitter] extensions.
  *
  * @author Stefan Andjelkovic
  */

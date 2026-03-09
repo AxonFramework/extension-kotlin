@@ -1,8 +1,20 @@
 = Release Notes Kotlin Extension
 :navtitle: Release notes
 
-You can find the release notes for the Kotlin Extension of version 4.10.0 below.
+You can find the release notes for the Kotlin Extension of version 4.10.0 and above below.
 For earlier releases, please visit the link:https://legacydocs.axoniq.io/reference-guide/release-notes/rn-extensions/rn-kotlin[legacy documentation].
+
+== Release 5.0.0
+
+=== _Enhancements_
+
+- Upgraded to Axon Framework 5.0.x and JVM 21
+- Replaced `CommandCallback`-based API with `CommandResult`; new extensions: `send`, `sendForResult`, `sendAndWait`
+- Replaced `ResponseType`-based query extensions with direct-typed variants: `query`, `queryMany`, `subscriptionQuery`, `streamingQuery`
+- Replaced `AggregateTestFixture` / `SagaTestFixture` with phase-based `AxonTestFixture` API; new extensions: `whenever`, `exception`
+- Removed `EventUpcaster` Kotlin DSL (removed in Axon Framework 5)
+- Removed `ArrayResponseType`, `AggregateLifecycleExtensions`, `BuilderExtensions`, `ResultDiscriminatorCommandCallback` (all removed in Axon Framework 5)
+- Updated artifact dependency from `axon-configuration` to `axon-messaging`
 
 == Release 4.12.0
 
