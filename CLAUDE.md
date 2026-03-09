@@ -188,6 +188,7 @@ This extension targets Axon Framework **5.0.x**. Major removals from AF4:
 | `AggregateLifecycle` / `@AggregateRoot` | Removed entirely |
 | `scatterGather` on `QueryGateway` | Removed — use `streamingQuery` |
 | `axon-configuration` artifact | Renamed to `axon-messaging` |
+| `EventUpcaster` Kotlin DSL | Not available in 5.0 — upcasting returns in 5.2.0; use payload conversion at handling time in the meantime |
 
 ## Linting / Quality
 

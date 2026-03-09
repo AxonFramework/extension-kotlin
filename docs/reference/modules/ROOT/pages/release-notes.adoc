@@ -12,7 +12,7 @@ For earlier releases, please visit the link:https://legacydocs.axoniq.io/referen
 - Replaced `CommandCallback`-based API with `CommandResult`; new extensions: `send`, `sendForResult`, `sendAndWait`
 - Replaced `ResponseType`-based query extensions with direct-typed variants: `query`, `queryMany`, `subscriptionQuery`, `streamingQuery`
 - Replaced `AggregateTestFixture` / `SagaTestFixture` with phase-based `AxonTestFixture` API; new extensions: `whenever`, `exception`
-- Removed `EventUpcaster` Kotlin DSL (removed in Axon Framework 5)
+- Removed `EventUpcaster` Kotlin DSL (not available in Axon Framework 5.0; upcasting returns in 5.2.0)
 - Removed `ArrayResponseType`, `AggregateLifecycleExtensions`, `BuilderExtensions`, `ResultDiscriminatorCommandCallback` (all removed in Axon Framework 5)
 - Updated artifact dependency from `axon-configuration` to `axon-messaging`
 

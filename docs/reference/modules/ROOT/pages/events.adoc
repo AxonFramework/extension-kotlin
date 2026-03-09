@@ -3,5 +3,7 @@
 
 This section describes the additional functionality attached to Axon's event publication and handling logic.
 
-NOTE: The `EventUpcaster` Kotlin DSL that was available in Axon Framework 4.x has been removed in Axon Framework 5.
-Event upcasting is now handled directly through the Java API provided by the framework.
+NOTE: The `EventUpcaster` Kotlin DSL that was available in Axon Framework 4.x is not available in Axon Framework 5.0.
+Event upcasters are scheduled to return in Axon Framework 5.2.0 with an updated API.
+In the meantime, rely on link:https://docs.axoniq.io/axon-framework-reference/5.0/events/event-versioning/[payload conversion at handling time,window=_blank,role=external]
+for most event versioning scenarios.
