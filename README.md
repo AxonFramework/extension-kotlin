@@ -1,8 +1,13 @@
+> [!IMPORTANT]
+> ## 📦 This repository is archived
+>
+> The Kotlin extension has moved into **Axon Framework** and is no longer maintained here.
+> Please use the new location for the latest releases, issues and pull requests:
+>
+> - 💻 **Source code:** [`axon-kotlin` module in Axon Framework](https://github.com/AxonIQ/AxonFramework/tree/main/extensions/kotlin)
+> - 📚 **Documentation:** - can be found [here](https://docs.axoniq.io/axon-framework-reference/latest/extensions/kotlin/)
+
 # Axon Framework - Kotlin Extension
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.axonframework.extensions.kotlin/axon-kotlin/badge.svg)](https://maven-badges.herokuapp.com/maven-central/org.axonframework.extensions.kotlin/axon-kotlin)
-![Build Status](https://github.com/AxonFramework/extension-kotlin/workflows/Kotlin%20Extension/badge.svg?branch=master)
-[![SonarCloud Status](https://sonarcloud.io/api/project_badges/measure?project=AxonFramework_extension-kotlin&metric=alert_status)](https://sonarcloud.io/dashboard?id=AxonFramework_extension-kotlin)
-[![Open Source Helpers](https://www.codetriage.com/axonframework/extension-kotlin/badges/users.svg)](https://www.codetriage.com/axonframework/extension-kotlin)
 
 _Note:_ This extension is still in an experimental stage.
 
